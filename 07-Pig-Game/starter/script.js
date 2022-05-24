@@ -101,9 +101,13 @@ class Player {
   updateHold(hold) {
     this.hold = hold;
   }
-  resetScore() {
+  reset() {
     this.score = 0;
     this.hold = 0;
+    this.element.parentNode.classList.remove(
+      'player--winner',
+      'player--active'
+    );
   }
 }
 
@@ -121,11 +125,9 @@ const initalizeGame = () => {
   rollBtn.removeAttribute('disabled');
   holdBtn.removeAttribute('disabled');
   renderUpdate(true);
-  if (currentPlayer)
-    currentPlayer.element.parentNode.classList.remove('player--winner');
   // player update
-  player1.resetScore();
-  player2.resetScore();
+  player1.reset();
+  player2.reset();
   currentPlayer = false;
   switchPlayer();
 };
