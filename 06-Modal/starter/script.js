@@ -19,6 +19,7 @@ btnShowModal.forEach(button => {
   });
 });
 // handle hiding modal
+// 2 different ways to handle events (addEventListener and . notation)
 overlay.addEventListener('click', hideModal);
 btnCloseModal.addEventListener('click', hideModal);
 document.onkeydown = e => {
