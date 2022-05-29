@@ -52,6 +52,21 @@ const restaurant = {
 };
 
 // Exercises
+////////////////////////////
+/* MORE WORK WITH STRINGS */
+////////////////////////////
+
+for (const flight of flights.split('+')) {
+  const [type, from, to, time] = flight.split(';');
+  const warning = type.startsWith('_Delayed') ? '🔴' : '🟢';
+  const output = `${warning}${type.replaceAll('_', ' ')} from ${from
+    .slice(0, 3)
+    .toUpperCase()} to ${to.slice(0, 3).toUpperCase()} (${time.replace(
+    ':',
+    'h'
+  )})`.padStart(50, ' ');
+  console.log(output);
+}
 /////////////
 /* STRINGS */
 /////////////
@@ -155,7 +170,7 @@ const planesInLine = function (n) {
   console.log(`There are ${n} planes in line ${'🛬'.repeat(n)}`);
 };
 planesInLine(5);
-*/
+
 ////////////////////
 /* MAPS ITERATION */
 ////////////////////
@@ -664,4 +679,71 @@ console.log(
 for (const [key, value] of gameEvents) {
   console.log(`${key < 45 ? '[FIRST' : '[SECOND'} HALF] ${key}: ${value}`);
 }
+*/
+/////////////////////////
+/* CODING CHALLENGE #4 */
+/////////////////////////
+/*
+document.body.append(document.createElement('textarea'));
+document.body.append(document.createElement('button'));
+
+document.querySelector('button').addEventListener('click', () => {
+  const text = document.querySelector('textarea').value;
+  let variables = text.split('\n').filter(el => el !== '');
+  let variables2 = text.split('\n').filter(el => el !== '');
+  let paddingLength = 0;
+
+  // conversion with regEx
+  // for (const [i, name] of variables.entries()) {
+  //   const upperCaseIndex = name.indexOf('_') + 1;
+  //   const nameRefined = name
+  //     .trim()
+  //     .toLowerCase()
+  //     .replace(/_.{1}/g, name[upperCaseIndex].toUpperCase());
+  //   paddingLength = paddingLength < nameRefined.length && nameRefined.length;
+  //   variables[i] = nameRefined;
+  // }
+
+  // conversion with .split/.join
+  // for (const [i, name] of variables2.entries()) {
+  //   const nameParts = name.trim().toLowerCase().split('_');
+  //   nameParts[1] = nameParts[1][0].toUpperCase() + nameParts[1].slice(1);
+  //   variables2[i] = nameParts.join('');
+  //   paddingLength =
+  //     paddingLength < variables2[i].length && variables2[i].length;
+  // }
+  //   jakas_zmienna_z_dowolna
+  // Ilosia_podkreslnikow
+  // oraz--_roznymi_--dziwnymi_znakami
+  // --_blabla_bla
+
+  // conversion with .split/.join any number of underscore symbol and other symbols noise
+  for (const [i, name] of variables2.entries()) {
+    const nameParts = name
+      .trim()
+      .toLowerCase()
+      .split('_')
+      .filter(el => el !== '');
+    let nameRefined = '';
+
+    for (const [i, word] of nameParts.entries()) {
+      const [letters] = /[a-z]+/g.exec(word) || [''];
+      if (letters.length < 1) continue;
+      i > 0
+        ? (nameRefined += letters[0].toUpperCase() + letters.slice(1))
+        : (nameRefined += letters[0] + letters.slice(1));
+    }
+    variables2[i] = nameRefined;
+
+    paddingLength =
+      paddingLength < variables2[i].length
+        ? variables2[i].length
+        : paddingLength;
+  }
+
+  // add thicker symbol
+  for (const [i, name] of variables2.entries()) {
+    console.log(`${name.padEnd(paddingLength + 2, ' ')} ${'✅'.repeat(i + 1)}`);
+  }
+});
 */
