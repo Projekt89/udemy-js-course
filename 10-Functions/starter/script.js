@@ -251,6 +251,7 @@ displayResults([1, 5, 3, 9, 6, 1].join(', '));
 /////////////////////////////////////////////////////
 /* IIFE - IMMEDIATELY INVOKED FUNCTION EXPRESSIONS */
 /////////////////////////////////////////////////////
+/*
 // functions that needs to be called just once and then dissapear. These are needed for async await.
 //IIFE were commonly used before let and const keyword were implemented to avoid errors with local function scoped variables.
 const runOnce = function () {
@@ -265,3 +266,81 @@ runOnce();
 })(); // Such construction will be called once and dissappear
 
 (() => console.log('This will also never run again'))();
+*/
+//////////////
+/* CLOSURES */
+//////////////
+// A function always has access to variable environment (VE) of the function in which it was created
+// Closure = VE attached to the function exactly ath the time and place the function was created
+// Through this mechanism we are able to create enclosed environment of variables that are not available anywhere else but in the function/functions that were created when that VE was existing. When the 'parent function' is poped from the CALL STACK the access to it's variables (VE) may be only mentained inside these returned functions
+// it's then like a PRIVATE property of function, without access from out
+const secureBooking = function () {
+  let passengerCount = 0;
+
+  return function () {
+    passengerCount++;
+    console.log(`${passengerCount} passengers`);
+  };
+};
+
+const booker = secureBooking();
+booker(); // 1 passengers
+booker(); // 2 passengers
+// access to secureBooking VE maintained only in booker function
+// in this case passengerCount variable is inside closure to which access is provided only through the booker() function
+
+console.dir(booker); // in scopes we can see closures func. has access to
+
+// EXAMPLES
+// exampla 1
+let f;
+const g = function () {
+  const a = 23;
+  f = function () {
+    console.log(a * 2);
+  };
+};
+// f was defined in global scoped but assigned to value of function that has access to closure of g variables
+
+const h = function () {
+  const b = 777;
+  f = function () {
+    console.log(b * 2);
+  };
+};
+
+g(); // f assigned a * 2
+f(); // f executed
+h(); // f assigned b * 2
+f(); // f executed
+
+console.debug(f);
+// example 2
+const boardPassengers = function (n, wait) {
+  const perGroup = n / 3;
+
+  setTimeout(() => {
+    console.log(`We are now boarding all ${n} passengers`);
+    console.log(`There are 3 groups, each with ${perGroup} passengers`);
+  }, wait * 1000);
+
+  console.log(`Will start boarding in ${wait} seconds`);
+};
+
+boardPassengers(90, 5);
+// setTimeout executes n seconds after boarding passengers is poped of call stack (setTimeout is asyns) so JS creates closure for it with perGroup variable so useTimeout can use it after time runs out
+/////////////////
+/* CHALLENGE 2 */
+/////////////////
+
+(function () {
+  const header = document.querySelector('h1');
+  header.style.color = 'red';
+
+  document.body.addEventListener('pointerdown', () => {
+    header.style.color = 'blue';
+    setTimeout(() => {
+      header.style.color = 'red';
+    }, 1000);
+  });
+})();
