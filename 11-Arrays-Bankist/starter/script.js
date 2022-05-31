@@ -82,9 +82,6 @@ const displayMovements = function (movements) {
   });
 };
 
-// forcing the operation for user account1
-displayMovements(account1.movements);
-
 // creates additional value 'username' in every account obj.
 const createUsernames = function (accs) {
   // modify source array with forEach
@@ -99,13 +96,67 @@ const createUsernames = function (accs) {
 createUsernames(accounts); // call func. to create username values
 
 // displaying a balance of oparations
-const calcPrintBalance = function (movements) {
-  const balance = movements.reduce((acc, cur) => acc + cur, 0);
+const calcPrintBalance = function (movements, interest) {
+  const balance = movements.reduce((acc, cur) => acc + cur, 0) + interest;
   labelBalance.textContent = `${balance} €`;
 };
 
-calcPrintBalance(account1.movements);
+// calculating summaries
+const calcDisplaySummary = function (user) {
+  const income = user.movements
+    .filter(el => el > 0)
+    .reduce((acc, cur) => acc + cur, 0);
+  const expenses = user.movements
+    .filter(el => el < 0)
+    .reduce((acc, cur) => acc + cur, 0);
+  const interest = user.movements
+    .filter(el => el > 0)
+    .reduce(
+      (acc, cur) =>
+        cur * (user.interestRate / 100) > 1
+          ? acc + cur * (user.interestRate / 100)
+          : acc,
+      0
+    );
 
+  labelSumIn.textContent = `${income.toFixed(2)} €`;
+  labelSumOut.textContent = `${Math.abs(expenses).toFixed(2)} €`;
+  labelSumInterest.textContent = `${interest.toFixed(2)} €`;
+  calcPrintBalance(user.movements, interest);
+};
+
+let currentAccount;
+
+// handling logging of users
+const loginUser = (users, login, password) =>
+  users.find(user => user.username === login && user.pin === password);
+
+btnLogin.addEventListener('click', e => {
+  e.preventDefault();
+  const username = inputLoginUsername.value;
+  const pin = Number(inputLoginPin.value);
+  currentAccount = loginUser(accounts, username, pin);
+  if (!currentAccount) {
+    console.log('Wrong data');
+    return;
+  }
+  // reset input fields
+  inputLoginUsername.value = inputLoginPin.value = '';
+
+  // Display welcome message
+  labelWelcome.textContent = `Welcome back ${
+    currentAccount.owner.split(' ')[0]
+  }`;
+  // Display UI
+  containerApp.style.opacity = 1;
+  displayMovements(currentAccount.movements);
+  calcDisplaySummary(currentAccount);
+});
+
+// Transfering money between users
+btnTransfer.addEventListener('click', e => {
+  e.preventDefault();
+});
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 // LECTURES
@@ -262,7 +313,7 @@ currenciesUnique.forEach((val, _, set) => {
   */
 }
 //////////////////////////////
-/* CHALLENGE 2 DOGS AVG AGE */
+/* CHALLENGE 2 & 3 DOGS AVG AGE */
 //////////////////////////////
 {
   /* 
@@ -291,5 +342,39 @@ const calcAverageAge = function (ages) {
 console.log(calcAverageAge(dog1));
 console.log(`-----------------------`);
 console.log(calcAverageAge(dog2));
+ */
+}
+//////////////////////
+/* CHAINING METHODS */
+//////////////////////
+{
+  /* 
+  const euroToUsd = 1.1;
+  // PIPELINE
+  const income = movements
+    .filter(el => el > 0)
+    .map(el => el * euroToUsd)
+    // .map((el, i, arr) => {
+    //   console.log(arr);        // we can inspect returned array i pipeline
+    //   return el * euroToUsd;
+    // })
+    .reduce((acc, cur) => acc + cur);
+
+  console.log(`Income in USD: ${income.toFixed(2)}`);
+   */
+}
+/////////////////
+/* FIND METHOD */
+/////////////////
+{
+  /* 
+// Find method loops over the array and retrive first element of the array that return value true in comparison
+// returns element not array
+// returns only first element found
+
+const firstWithdrawal = movements.find(el => el < 0);
+console.log(firstWithdrawal);
+
+console.log(accounts.find(el => el.username === 'stw'));
  */
 }
