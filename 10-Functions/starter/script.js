@@ -149,11 +149,12 @@ book.call(swiss, 628, 'Bob Ross');
 const flightData = [582, 'Alexander Johanson'];
 book.apply(swiss, flightData); // apply receives this target as first argument and an array of data as a second. Almost not in use anymore
 book.call(swiss, ...flightData); // the same as above
-
+*/
 /////////////////
 // BIND METHOD //
 /////////////////
 // bind allow to bind THIS keyword with a target but the difference between call and apply is that it doen't immidiatelly call the function but RETURNS A FUNCTION with this keyword binded
+/*
 const bookEW = book.bind(eurowings);
 const bookLH = book.bind(lufthansa);
 const bookSw = book.bind(swiss);
@@ -274,6 +275,7 @@ runOnce();
 // Closure = VE attached to the function exactly ath the time and place the function was created
 // Through this mechanism we are able to create enclosed environment of variables that are not available anywhere else but in the function/functions that were created when that VE was existing. When the 'parent function' is poped from the CALL STACK the access to it's variables (VE) may be only mentained inside these returned functions
 // it's then like a PRIVATE property of function, without access from out
+/*
 const secureBooking = function () {
   let passengerCount = 0;
 
@@ -329,10 +331,11 @@ const boardPassengers = function (n, wait) {
 
 boardPassengers(90, 5);
 // setTimeout executes n seconds after boarding passengers is poped of call stack (setTimeout is asyns) so JS creates closure for it with perGroup variable so useTimeout can use it after time runs out
+*/
 /////////////////
 /* CHALLENGE 2 */
 /////////////////
-
+/*
 (function () {
   const header = document.querySelector('h1');
   header.style.color = 'red';
@@ -344,3 +347,5 @@ boardPassengers(90, 5);
     }, 1000);
   });
 })();
+// in challenge above there are two functions that are using closure from IIFE one gets access to VE of iife when body is clicked and second exactly second after click turning color back to red
+*/
