@@ -65,11 +65,14 @@ const inputClosePin = document.querySelector('.form__input--pin');
 //////////////////////
 
 // displaying user operations
-const displayMovements = function (movements) {
+const displayMovements = function (movements, sort = false) {
   containerMovements.innerHTML = ''; // cleaning container
 
+  const transactions = sort
+    ? movements.slice().sort((a, b) => a - b)
+    : movements;
   // creating HTML and inserting into container
-  movements.forEach((mov, i) => {
+  transactions.forEach((mov, i) => {
     const type = mov > 0 ? 'deposit' : 'withdrawal';
     const html = `<div class="movements__row">
       <div class="movements__type movements__type--${type}">${
@@ -81,6 +84,14 @@ const displayMovements = function (movements) {
     containerMovements.insertAdjacentHTML('afterbegin', html);
   });
 };
+
+// sorting movement list functionality
+let sorted = false;
+btnSort.addEventListener('click', e => {
+  e.preventDefault();
+  displayMovements(currentAccount.movements, !sorted);
+  sorted = !sorted;
+});
 
 // creates additional value 'username' in every account obj.
 const createUsernames = function (accs) {
@@ -99,6 +110,7 @@ createUsernames(accounts); // call func. to create username values
 const calcPrintBalance = function (movements, interest) {
   const balance = movements.reduce((acc, cur) => acc + cur, 0) + interest;
   labelBalance.textContent = `${balance} €`;
+  return balance;
 };
 
 // calculating summaries
@@ -122,10 +134,16 @@ const calcDisplaySummary = function (user) {
   labelSumIn.textContent = `${income.toFixed(2)} €`;
   labelSumOut.textContent = `${Math.abs(expenses).toFixed(2)} €`;
   labelSumInterest.textContent = `${interest.toFixed(2)} €`;
-  calcPrintBalance(user.movements, interest);
+  user.balance = calcPrintBalance(user.movements, interest);
 };
 
 let currentAccount;
+
+//Updating UI function used after introducing changes to user data
+const updateUI = function (user) {
+  displayMovements(user.movements);
+  calcDisplaySummary(user);
+};
 
 // handling logging of users
 const loginUser = (users, login, password) =>
@@ -133,8 +151,8 @@ const loginUser = (users, login, password) =>
 
 btnLogin.addEventListener('click', e => {
   e.preventDefault();
-  const username = inputLoginUsername.value;
-  const pin = Number(inputLoginPin.value);
+  const username = inputLoginUsername.value.trim();
+  const pin = Number(inputLoginPin.value.trim());
   currentAccount = loginUser(accounts, username, pin);
   if (!currentAccount) {
     console.log('Wrong data');
@@ -142,21 +160,76 @@ btnLogin.addEventListener('click', e => {
   }
   // reset input fields
   inputLoginUsername.value = inputLoginPin.value = '';
+  inputLoginPin.blur();
 
   // Display welcome message
   labelWelcome.textContent = `Welcome back ${
     currentAccount.owner.split(' ')[0]
   }`;
-  // Display UI
+  // Show UI and update it with user data
   containerApp.style.opacity = 1;
-  displayMovements(currentAccount.movements);
-  calcDisplaySummary(currentAccount);
+  updateUI(currentAccount);
 });
 
 // Transfering money between users
 btnTransfer.addEventListener('click', e => {
   e.preventDefault();
+  const amount = Number(inputTransferAmount.value);
+  const transferTo = accounts.find(
+    user =>
+      user.username === inputTransferTo.value ||
+      user.name === inputTransferTo.value
+  );
+
+  if (
+    amount > 0 &&
+    amount < currentAccount.balance &&
+    transferTo?.username &&
+    transferTo.username !== currentAccount.username
+  ) {
+    currentAccount.movements.push(-amount);
+    transferTo.movements.push(amount);
+    updateUI(currentAccount);
+  } else console.log('transfer invalid');
+  inputTransferAmount.value = inputTransferTo.value = '';
 });
+
+// Apply for loan functionality
+btnLoan.addEventListener('click', e => {
+  e.preventDefault();
+  const requestedAmount = Number(inputLoanAmount.value);
+  if (currentAccount.movements.some(el => el >= requestedAmount * 0.1)) {
+    currentAccount.movements.push(requestedAmount);
+    updateUI(currentAccount);
+  } else console.log('not granted');
+  inputLoanAmount.value = '';
+});
+
+// Deleting account functionality
+btnClose.addEventListener('click', e => {
+  e.preventDefault();
+  if (
+    inputCloseUsername.value === currentAccount.username &&
+    Number(inputClosePin.value) === currentAccount.pin
+  ) {
+    accounts.splice(
+      accounts.findIndex(
+        account => account.username === currentAccount.username
+      ),
+      1
+    );
+    containerApp.style.opacity = 0;
+  } else console.log('Could not confirm');
+
+  inputClosePin.value = inputCloseUsername.value = '';
+});
+
+// counting total bank balance
+const bankBalance = accounts
+  .flatMap(account => account.movements)
+  .reduce((acc, cur) => acc + cur, 0);
+console.log(bankBalance);
+
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 // LECTURES
@@ -377,4 +450,99 @@ console.log(firstWithdrawal);
 
 console.log(accounts.find(el => el.username === 'stw'));
  */
+}
+////////////////////
+/* SOME and EVERY */
+////////////////////
+{
+  /* 
+  // Some returns true when any of array elements cause the comparison in callback return true
+  console.log(movements.includes(-130)); // true
+  console.log(movements.some(el => el === -130)); // true - done the same as includes
+  console.log(movements.some(el => el > 0)); // true - any deposits
+  console.log(movements.some(el => el > 5000)); // true - any deposits above 5000
+
+  // Every returns true when all of array elements cause the comparison in callback return true
+  console.log(movements.every(el => el > 0)); // false
+  console.log(movements.every(el => el > 0 || el < 0)); // true
+
+  // Separate Callback - important in case of dry code
+  const deposits = el => el > 0;
+  console.log(movements.some(deposits)); // true - there are deposits on that account
+  console.log(movements.every(deposits)); // false - they are not all only deposits
+  console.log(movements.filter(deposits)); // return array of deposits
+   */
+}
+//////////////////////
+/* FLAT and FLATMAP */
+//////////////////////
+{
+  /* 
+  // flat flattens array which is removing nested arrays and puting them into main array
+  // flat returns new array NOT MUTATE original array
+  const arr = [[1, 2, 3], [4, 5, 6], 7, 8];
+  console.log(arr.flat()); // [1, ... ,8] flatten array (remove level)
+
+  const arrDeep = [[1, [2, 3]], [[4, [5]], 6], 7, 8];
+  console.log(arrDeep.flat()); // [1, [2,3], ... , 8] flatten without arg removes 1 level of array
+  console.log(arrDeep.flat(3)); // [1, ... , 8] flatten with arg removes n levels of array
+
+  // flatMap combains flat() and map() methods together which is better for performace
+  // flatMap only goes 1 LEVEL DEEP
+  console.log(arrDeep.flatMap(el => el));
+   */
+}
+////////////////////
+/* SORTING ARRAYS */
+////////////////////
+{
+  /* 
+  // sort() method works by sorting values of array based on strings
+  // sort MUTATES the original array
+  const owners = ['Bob', 'Jonas', 'Adam', 'Martha'];
+  console.log(owners.sort()); // [alpahbeticaly sort array]
+
+  console.log(movements.sort()); // [array sorted based on values converted to strings] (total mess)
+
+  // if return is less than 0  A, B,  if return is larger than 0 B, A
+  console.log(movements.sort((a, b) => (a > b ? 1 : -1))); // ascending order
+  console.log(movements.sort((a, b) => a - b))); // ascending order simplified
+  console.log(movements.sort((a, b) => (a > b ? -1 : 1))); // descending order
+  console.log(movements.sort((a, b) => b - a)); // descending order simplified
+ */
+}
+/////////////////////////////////
+/* PROGRAMATICLY CREATE ARRAYS */
+/////////////////////////////////
+{
+  // create completely empty array using Array() object
+  const x = new Array(7); // [empty x 7]
+
+  // only method working with such empty array is .FILL(value) which fills array with the value
+  //x.fill(5); // [5, ... , 5, 5]
+
+  // .fill() works a bit like slice where starting index and ending can be specified
+  x.fill(3, 3, 5); // [empty x 3, 3, empty x 2]
+
+  // .fill() works with regular arrays to
+  movements.fill(100, 2, 6); // [ ... , 100, 100, 100, 100, ...]
+
+  // creating new array by using FROM method of object ARRAY. Arg 1: object with property length, Arg 2 callback function returning value of every place in array
+  const y = Array.from({ length: 7 }, () => 1); // [1, ... , 1] array of 7 filled with 1
+  const z = Array.from({ length: 7 }, (_, i) => i + 1); // [1, 2, ... , 7]
+  // callback function used in method array works exactly like .map() so we have access to the same arguments that are available for map method
+
+  // Transformation of Node List returned from for ex. querrySelectorAll to array
+  labelBalance.addEventListener('click', () => {
+    const movementsUI = Array.from(
+      document.querySelectorAll('.movements__value'), //select node list
+      el => Number(el.textContent.replace('€', '')) //return just amount from every node
+    );
+
+    console.log(movementsUI);
+
+    // creating array with html elements using JS6 spread operator
+    const movementsUI2 = [...document.querySelectorAll('.movements__value')];
+    console.log(movementsUI2);
+  });
 }
