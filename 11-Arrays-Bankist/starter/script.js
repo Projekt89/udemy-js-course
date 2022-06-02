@@ -224,12 +224,89 @@ btnClose.addEventListener('click', e => {
   inputClosePin.value = inputCloseUsername.value = '';
 });
 
+// ADDITIONAL TRAINING WITH ARRAY METHODS
+{
+  /*
 // counting total bank balance
 const bankBalance = accounts
   .flatMap(account => account.movements)
   .reduce((acc, cur) => acc + cur, 0);
 console.log(bankBalance);
 
+const bankDepositSum = accounts
+  .flatMap(account => account.movements)
+  .reduce((acc, cur) => (cur > 0 ? acc + cur : acc));
+console.log(bankDepositSum);
+
+const deposits1000 = accounts
+  .flatMap(account => account.movements)
+  .filter(mov => mov > 1000).length;
+console.log('Deposits over 1000 using filter ', deposits1000);
+
+// a++ returns a | ++a returns a + 1
+const bankDeposits1000 = accounts
+  .flatMap(account => account.movements)
+  // need to use ++acc as acc++ would always returned 0 and acumulator would never increase
+  .reduce((acc, cur) => (cur > 1000 ? ++acc : acc), 0);
+console.log('Deposits > 1000 using reduce', bankDeposits1000);
+
+// use object as acululator in reduce method
+const { deposits, withdrawals } = accounts
+  .flatMap(acc => acc.movements)
+  .reduce(
+    (sums, cur) => {
+      // cur > 0 ? (sums.deposits += cur) : (sums.withdrawals += cur);
+      // return sums;
+      sums[cur > 0 ? 'deposits' : 'withdrawals'] += cur;
+      return sums; // if the start state is object we have to return mutated similar obj.
+    },
+    {
+      deposits: 0,
+      withdrawals: 0,
+    }
+  );
+console.log(deposits, withdrawals);
+
+// Converting to Title Case
+
+const convertTitleCase = function (title) {
+  const exceptionWords = [
+    'a',
+    'an',
+    'and',
+    'as',
+    'be',
+    'because',
+    'before',
+    'but',
+    'if',
+    'is',
+    'of',
+    'or',
+    'over',
+    'on',
+    'so',
+    'the',
+    'to',
+  ];
+
+  const titleCase = title
+    .toLowerCase()
+    .split(' ')
+    .map((word, i) =>
+      !exceptionWords.includes(word) || i === 0
+        ? word[0].toUpperCase() + word.slice(1)
+        : word
+    );
+  return titleCase.join(' ');
+};
+
+console.log(convertTitleCase('this is one of several examples of title case'));
+console.log(convertTitleCase('i can write as many as i want and it will be'));
+console.log(convertTitleCase('converted into title case'));
+console.log(convertTitleCase('so its nice to have such usefull function'));
+*/
+}
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 // LECTURES
@@ -515,7 +592,7 @@ console.log(accounts.find(el => el.username === 'stw'));
 /* PROGRAMATICLY CREATE ARRAYS */
 /////////////////////////////////
 {
-  // create completely empty array using Array() object
+  /* // create completely empty array using Array() object
   const x = new Array(7); // [empty x 7]
 
   // only method working with such empty array is .FILL(value) which fills array with the value
@@ -533,7 +610,7 @@ console.log(accounts.find(el => el.username === 'stw'));
   // callback function used in method array works exactly like .map() so we have access to the same arguments that are available for map method
 
   // Transformation of Node List returned from for ex. querrySelectorAll to array
-  labelBalance.addEventListener('click', () => {
+  document.querySelector('.logo').addEventListener('click', () => {
     const movementsUI = Array.from(
       document.querySelectorAll('.movements__value'), //select node list
       el => Number(el.textContent.replace('€', '')) //return just amount from every node
@@ -544,5 +621,80 @@ console.log(accounts.find(el => el.username === 'stw'));
     // creating array with html elements using JS6 spread operator
     const movementsUI2 = [...document.querySelectorAll('.movements__value')];
     console.log(movementsUI2);
+  }); */
+}
+/////////////////////////////
+/* CHALLENGE 4 EATING DOGS */
+/////////////////////////////
+{
+  // TEST DATA:
+  const dogs = [
+    { weight: 22, curFood: 250, owners: ['Alice', 'Bob'] },
+    { weight: 8, curFood: 200, owners: ['Matilda'] },
+    { weight: 13, curFood: 275, owners: ['Sarah', 'John'] },
+    { weight: 32, curFood: 340, owners: ['Michael'] },
+  ];
+
+  // 1
+  dogs.forEach(
+    dog => (dog.recomendedFood = Math.trunc(dog.weight ** 0.75 * 28))
+  );
+  console.log(dogs);
+  // 2
+  const owner = 'Alice';
+  dogs.forEach(dog => {
+    if (dog.owners.includes(owner))
+      dog.curFood >= dog.recomendedFood
+        ? console.log(`${owner}'s dog is eating too much`)
+        : console.log(`${owner}'s dog is not eating enough`);
   });
+
+  // 3
+  const ownersEatTooMuch = dogs
+    .filter(dog => dog.curFood > dog.recomendedFood)
+    .flatMap(dog => dog.owners);
+
+  const ownersEatTooLittle = dogs
+    .filter(dog => dog.curFood < dog.recomendedFood)
+    .flatMap(dog => dog.owners);
+
+  console.log(ownersEatTooMuch, ownersEatTooLittle);
+
+  // 4
+  const isAmoutFoodCorrectMessage = function (owners, ending) {
+    return (
+      owners.reduce(
+        (acc, cur, i, arr) =>
+          i === arr.length - 1 ? acc + `${cur}'s ` : acc + `${cur} and `,
+        ``
+      ) + `dogs eat ${ending}!`
+    );
+  };
+
+  console.log(isAmoutFoodCorrectMessage(ownersEatTooMuch, 'too much'));
+  console.log(isAmoutFoodCorrectMessage(ownersEatTooLittle, 'too little'));
+
+  // 5
+  console.log(dogs.some(dog => dog.curFood === dog.recomendedFood));
+
+  // 6
+  const isAmountOfFoodOkay = dog =>
+    dog.curFood < dog.recomendedFood * 1.1 &&
+    dog.curFood > dog.recomendedFood * 0.9
+      ? true
+      : false;
+
+  console.log(dogs.some(isAmountOfFoodOkay));
+
+  // 7
+  const dogsEatingOkay = dogs.filter(isAmountOfFoodOkay);
+  const dogsNotEatingOkay = dogs.filter(dog => !isAmountOfFoodOkay(dog));
+  console.log(dogsEatingOkay, dogsNotEatingOkay);
+
+  // 8
+  const dogsSorted = dogs
+    .slice()
+    .sort((a, b) => a.recomendedFood - b.recomendedFood);
+  console.log(dogs);
+  console.log(dogsSorted);
 }
