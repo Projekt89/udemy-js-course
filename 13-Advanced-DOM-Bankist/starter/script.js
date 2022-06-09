@@ -8,6 +8,7 @@ const overlay = document.querySelector('.overlay');
 const btnCloseModal = document.querySelector('.btn--close-modal');
 const btnsOpenModal = document.querySelectorAll('.btn--show-modal');
 const header = document.querySelector('.header');
+const nav = document.querySelector('.nav');
 
 const openModal = function (e) {
   e.preventDefault(); // fix for scrolling to the top after clicking <a>
@@ -34,7 +35,7 @@ document.addEventListener('keydown', function (e) {
 /* IMPLEMENTING SMOOTH SCROLLING */
 ///////////////////////////////////
 const learnMoreBtn = document.querySelector('.btn--scroll-to');
-const section1 = document.getElementById('section--1');
+const section1 = document.querySelector('#section--1');
 learnMoreBtn.addEventListener('click', () => {
   /*  // OLD WAY OF SETTING SMOOTH SCROLLING
   const s1coords = section1.getBoundingClientRect(); // get data about position of section 1
@@ -98,10 +99,12 @@ document.querySelector('.nav__links').addEventListener('click', function (e) {
 ///////////////////////////////////////////////////////////////////
 /* TAB COMPONENT - EVENT DELEGATION, DOM TRAVERSING, DATA ATTR.  */
 ///////////////////////////////////////////////////////////////////
-document.querySelector('.operations').addEventListener('click', function (e) {
+/* 
+  // My version
+  document.querySelector('.operations').addEventListener('click', function (e) {
   // selecting correct trigger
   let trigger = e.target;
-  if (trigger.tagName === 'SPAN') trigger = e.target.parentNode;
+  if (trigger.tagName === 'SPAN') trigger = e.target.parentElement;
   if (trigger.classList.contains('btn')) {
     const tabIndex = trigger.dataset.tab;
     // selecting and manipulation of content
@@ -117,10 +120,265 @@ document.querySelector('.operations').addEventListener('click', function (e) {
     );
     trigger.classList.add('operations__tab--active');
   }
+}); */
+
+// course version
+const tabs = document.querySelectorAll('.operations__tab');
+const tabsContainer = document.querySelector('.operations__tab-container');
+const tabsContent = document.querySelectorAll('.operations__content');
+tabsContainer.addEventListener('click', function (e) {
+  const clicked = e.target.closest('.operations__tab');
+  // Guard clause
+  if (!clicked) return; // if clicked == null as there is no operations__tab el. found
+  // handle activating tab btn
+  tabs.forEach(t => t.classList.remove('operations__tab--active'));
+  clicked.classList.add('operations__tab--active');
+  // Activate adequate content area
+  tabsContent.forEach(tc => tc.classList.remove('operations__content--active'));
+  document
+    .querySelector(`.operations__content--${clicked.dataset.tab}`)
+    .classList.add('operations__content--active');
 });
+
+///////////////////////////////////////////////////////////////////
+/* MENU FADE FUNCTIONALITY - PASSING ARGUMENTS TO EVENT HANDLERS */
+///////////////////////////////////////////////////////////////////
+
+const handleHover = function (e, opacity) {
+  if (e.target.classList.contains('nav__link')) {
+    const navLink = e.target;
+    const siblings = navLink.closest('.nav').querySelectorAll('.nav__link');
+    const logo = navLink.closest('.nav').querySelector('img');
+
+    siblings.forEach(el => {
+      if (el !== navLink) el.style.opacity = opacity;
+    });
+    logo.style.opacity = opacity;
+  }
+};
+
+// mouse over is similar to mouse enter however it bubble up while mouse enter doesn't
+// here we dont use closest as clickable element has no children
+nav.addEventListener('mouseover', e => handleHover(e, 0.5));
+
+// mouse out is similar to mouse leave however it bubble up while mouse leave doesn't
+nav.addEventListener('mouseout', e => handleHover(e, 1));
+
+// Alternative solution from course - passing value through this - assigning it manually via bind
+
+// nav.addEventListener('mouseover', handleHover.bind(0.5));
+// in function
+// siblings.forEach(el => {
+//   if (el !== navLink) el.style.opacity = this;
+//   // this is binded to the argument value. That way we can pass only 1 arg. so 1 value or object
+// });
+
+//////////////////////////////////////
+/* STICKY NAVIGATION - SCROLL EVENT */
+//////////////////////////////////////
+/* const initialCoords = section1.getBoundingClientRect();
+
+window.addEventListener('scroll', function (e) {
+  if (window.scrollY > initialCoords.top) nav.classList.add('sticky');
+  if (window.pageYOffset < initialCoords.top - initialCoords.top * 0.7) {
+    nav.classList.remove('sticky');
+  }
+}); // using scroll event is really not efficient and should be avoided */
+
+///////////////////////////////////////////////////
+/* STICKY NAVIGATION - INTERSECTION OBSERVER API */
+///////////////////////////////////////////////////
+
+// LECTURE:
+
+// const obsCallback = function (entries, observer) {
+//   // entries === array of treshold entries
+//   entries.forEach(entry => console.log(entry));
+// };
+// const obsOptions = {
+//   root: null, // root is the element we are observing. null === observe entire viewport
+//   threshold: [0, 0.2], // % of intersection at which callback function will be called,
+//   // 0 - trigger when el moves in or out of the view
+//   // 1 - trigger ony when 100% of element is visible within root
+// };
+// // callback function will be called every time the observed element intersect root element at a given treshold. It will happen every time so no matter if we scroll up or down
+// const observer = new IntersectionObserver(obsCallback, obsOptions);
+// observer.observe(section1);
+
+// STICKY NAV via INTERSECTION OBSERVER - IMPLEMENTATION
+const navHeight = nav.getBoundingClientRect().height;
+const stickyNav = function (entries) {
+  const [entry] = entries;
+  entry.isIntersecting
+    ? nav.classList.remove('sticky')
+    : nav.classList.add('sticky');
+};
+
+const headerObserver = new IntersectionObserver(stickyNav, {
+  root: null,
+  threshold: 0,
+  rootMargin: `-${navHeight}px`, // margin like in CSS of root |+5px||-5px|   root   |-5px||+5px|
+});
+headerObserver.observe(header);
+//////////////////////////////////////////////////////////
+/* REVEALING ELEMENTS ON SCROLL - INTERSECTION OBSERVER */
+//////////////////////////////////////////////////////////
+/* // v1 - my version 
+const sections = [...document.querySelectorAll('.section')];
+const sectionHights = sections.map(el => el.getBoundingClientRect().height);
+
+const revealSection = function (entries, observer) {
+  const [entry] = entries;
+  console.log(entry);
+  if (entry.isIntersecting) entry.target.classList.remove('section--hidden');
+};
+
+const revealOptions = {
+  root: null,
+  threshold: 0,
+  rootMargin: '-25%',
+};
+
+const sectionObserver = new IntersectionObserver(revealSection, revealOptions);
+sections.forEach(section => sectionObserver.observe(section));
+ */
+
+// v2 - course version
+const allSections = document.querySelectorAll('.section');
+
+const revealSection = function (entries, observer) {
+  const [entry] = entries;
+  if (!entry.isIntersecting) return; // guarding executing unobserving too soon
+  else entry.target.classList.remove('section--hidden');
+  observer.unobserve(entry.target); // stop observing after reveal - better for performence
+};
+
+const sectionObserver = new IntersectionObserver(revealSection, {
+  root: null,
+  threshold: 0.15,
+});
+allSections.forEach(section => {
+  sectionObserver.observe(section);
+  // section.classList.add('section--hidden');
+});
+//////////////////////////////////////////////////////////////////
+/* LAZY LOADING OF IMAGES + IMPROVING PERFORMANCE WITH OBSERVER */
+//////////////////////////////////////////////////////////////////
+
+// Commonly the most performence affecting elements of web application are images. Therefore in order to optimize webapp efficency we should implement solutions related to images.
+
+const lazyImages = document.querySelectorAll('img[data-src]');
+
+const loadImage = function (entries, observer) {
+  const [entry] = entries;
+  console.log(entry);
+  // guard code to execute only when element is intersecting observer
+  if (!entry.isIntersecting) return;
+  // replace src with data-src
+  // assign new source and start downloading
+  entry.target.src = entry.target.dataset.src;
+  // remove blur only after the target element fires event LOAD !!!! to prevent showing ugly low resolution picture
+  entry.target.addEventListener('load', () => {
+    entry.target.classList.remove('lazy-img');
+  });
+  observer.unobserve(entry.target);
+};
+
+const imageObserver = new IntersectionObserver(loadImage, {
+  root: null,
+  threshold: 0,
+  rootMargin: '200px', // start loading image before it reach an observer
+});
+lazyImages.forEach(image => imageObserver.observe(image));
+
+///////////////////////////////////
+/* BUILDING A SLIDER COMPONENT - */
+///////////////////////////////////
+/* // v1 - my attempt to implement the slider
+const slides = [...document.querySelectorAll('.slide')];
+const slider = document.querySelector('.slider');
+const dotsContainer = document.querySelector('.dots');
+let currentSlide = 0;
+
+// binding slide with dot
+const slidesNavBundle = slides.map((slide, i) => {
+  slide.setAttribute(
+    'style',
+    `transform: translateX(${(i - currentSlide) * 100}%)`
+  );
+  const dot = document.createElement('div');
+  i === 0
+    ? dot.classList.add('dots__dot', 'dots__dot--active')
+    : dot.classList.add('dots__dot');
+  return [slide, dot];
+});
+// visualising navigation dots
+slidesNavBundle.forEach(([_, dot]) => dotsContainer.append(dot));
+// executing slide change
+const switchSlide = function (slide, dot, index) {
+  slide.setAttribute(
+    'style',
+    `transform: translateX(${(index - currentSlide) * 100}%)`
+  );
+  dot.classList.remove('dots__dot--active');
+  if (currentSlide === index) dot.classList.add('dots__dot--active');
+};
+
+// resolving click event delegation and click target 
+slider.addEventListener('click', function (e) {
+  if (e.target.classList.contains('slider__btn--left')) {
+    --currentSlide;
+    if (currentSlide === -1) currentSlide = slides.length - 1;
+    slidesNavBundle.forEach(([slide, dot], i) => switchSlide(slide, dot, i));
+  } else if (e.target.classList.contains('slider__btn--right')) {
+    ++currentSlide;
+    if (currentSlide === slides.length) currentSlide = 0;
+    slidesNavBundle.forEach(([slide, dot], i) => switchSlide(slide, dot, i));
+  } else if (e.target.classList.contains('dots__dot')) {
+    currentSlide = slidesNavBundle.findIndex(([_, dot]) => e.target === dot);
+    slidesNavBundle.forEach(([slide, dot], i) => switchSlide(slide, dot, i));
+  }
+});
+ */
+// v2 - course solution
+const slides = document.querySelectorAll('.slide');
+const btnLeft = document.querySelector('.slider__btn--left');
+const btnRight = document.querySelector('.slider__btn--right');
+let currentSlide = 0;
+const maxSlide = slides.length - 1;
+
+slides.forEach((s, i) => (s.style.transform = `translateX(${i * 100}%)`));
+
+// move to next slide
+const goToSlide = function (slide) {
+  slides.forEach(
+    (s, i) => (s.style.transform = `translateX(${(i - slide) * 100}%)`)
+  );
+};
+
+goToSlide(0);
+
+// next slide
+const nextSlide = function () {
+  currentSlide++;
+  if (currentSlide > maxSlide) currentSlide = 0;
+  goToSlide(currentSlide);
+};
+
+// previous slide
+const prevSlide = function () {
+  currentSlide--;
+  if (currentSlide < 0) currentSlide = maxSlide;
+  goToSlide(currentSlide);
+};
+
+btnRight.addEventListener('click', nextSlide);
+btnLeft.addEventListener('click', prevSlide);
+
 ////////////////////////////////////////
 /* SELECT, CREATE AND DELETE ELEMENTS */
 ////////////////////////////////////////
+
 let message, logo;
 
 {
