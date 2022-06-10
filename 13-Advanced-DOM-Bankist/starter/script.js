@@ -271,7 +271,6 @@ const lazyImages = document.querySelectorAll('img[data-src]');
 
 const loadImage = function (entries, observer) {
   const [entry] = entries;
-  console.log(entry);
   // guard code to execute only when element is intersecting observer
   if (!entry.isIntersecting) return;
   // replace src with data-src
@@ -294,87 +293,153 @@ lazyImages.forEach(image => imageObserver.observe(image));
 ///////////////////////////////////
 /* BUILDING A SLIDER COMPONENT - */
 ///////////////////////////////////
-/* // v1 - my attempt to implement the slider
-const slides = [...document.querySelectorAll('.slide')];
-const slider = document.querySelector('.slider');
-const dotsContainer = document.querySelector('.dots');
-let currentSlide = 0;
+// v1 - my attempt to implement the slider
+const initiateSlider = function () {
+  const slides = [...document.querySelectorAll('.slide')];
+  const slider = document.querySelector('.slider');
+  const dotsContainer = document.querySelector('.dots');
+  let currentSlide = 0;
 
-// binding slide with dot
-const slidesNavBundle = slides.map((slide, i) => {
-  slide.setAttribute(
-    'style',
-    `transform: translateX(${(i - currentSlide) * 100}%)`
-  );
-  const dot = document.createElement('div');
-  i === 0
-    ? dot.classList.add('dots__dot', 'dots__dot--active')
-    : dot.classList.add('dots__dot');
-  return [slide, dot];
-});
-// visualising navigation dots
-slidesNavBundle.forEach(([_, dot]) => dotsContainer.append(dot));
-// executing slide change
-const switchSlide = function (slide, dot, index) {
-  slide.setAttribute(
-    'style',
-    `transform: translateX(${(index - currentSlide) * 100}%)`
-  );
-  dot.classList.remove('dots__dot--active');
-  if (currentSlide === index) dot.classList.add('dots__dot--active');
-};
+  // binding slide with dot
+  const slidesNavBundle = slides.map((slide, i) => {
+    slide.setAttribute(
+      'style',
+      `transform: translateX(${(i - currentSlide) * 100}%)`
+    );
+    const dot = document.createElement('div');
+    i === 0
+      ? dot.classList.add('dots__dot', 'dots__dot--active')
+      : dot.classList.add('dots__dot');
+    return [slide, dot];
+  });
 
-// resolving click event delegation and click target 
-slider.addEventListener('click', function (e) {
-  if (e.target.classList.contains('slider__btn--left')) {
+  // visualising navigation dots
+  slidesNavBundle.forEach(([_, dot]) => dotsContainer.append(dot));
+
+  // executing slide change
+  const switchSlide = function (slide, dot, index) {
+    slide.setAttribute(
+      'style',
+      `transform: translateX(${(index - currentSlide) * 100}%)`
+    );
+    dot.classList.remove('dots__dot--active');
+    if (currentSlide === index) dot.classList.add('dots__dot--active');
+  };
+
+  // changing slide direction functions
+  const slideLeft = function () {
     --currentSlide;
     if (currentSlide === -1) currentSlide = slides.length - 1;
     slidesNavBundle.forEach(([slide, dot], i) => switchSlide(slide, dot, i));
-  } else if (e.target.classList.contains('slider__btn--right')) {
+  };
+
+  const slideRight = function () {
     ++currentSlide;
     if (currentSlide === slides.length) currentSlide = 0;
     slidesNavBundle.forEach(([slide, dot], i) => switchSlide(slide, dot, i));
-  } else if (e.target.classList.contains('dots__dot')) {
+  };
+
+  const activateDot = function (e) {
     currentSlide = slidesNavBundle.findIndex(([_, dot]) => e.target === dot);
     slidesNavBundle.forEach(([slide, dot], i) => switchSlide(slide, dot, i));
-  }
-});
- */
+  };
+
+  // resolving click event delegation and click target
+  slider.addEventListener('click', function (e) {
+    if (e.target.classList.contains('slider__btn--left')) slideLeft();
+    else if (e.target.classList.contains('slider__btn--right')) slideRight();
+    else if (e.target.classList.contains('dots__dot')) activateDot(e);
+  });
+
+  // navigate slider with arrow keys
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft') slideLeft();
+    if (e.key === 'ArrowRight') slideRight();
+  });
+};
+
+initiateSlider();
+
 // v2 - course solution
-const slides = document.querySelectorAll('.slide');
-const btnLeft = document.querySelector('.slider__btn--left');
-const btnRight = document.querySelector('.slider__btn--right');
-let currentSlide = 0;
-const maxSlide = slides.length - 1;
+/* 
+const slider = function () {
+  const slides = document.querySelectorAll('.slide');
+  const btnLeft = document.querySelector('.slider__btn--left');
+  const btnRight = document.querySelector('.slider__btn--right');
+  const dotContainer = document.querySelector('.dots');
+  let currentSlide = 0;
+  const maxSlide = slides.length - 1;
 
-slides.forEach((s, i) => (s.style.transform = `translateX(${i * 100}%)`));
+  slides.forEach((s, i) => (s.style.transform = `translateX(${i * 100}%)`));
 
-// move to next slide
-const goToSlide = function (slide) {
-  slides.forEach(
-    (s, i) => (s.style.transform = `translateX(${(i - slide) * 100}%)`)
-  );
+  // dots
+  const createDots = function () {
+    slides.forEach((_, i) =>
+      dotContainer.insertAdjacentHTML(
+        'beforeend',
+        `<button class="dots__dot" data-slide=${i}></button>`
+      )
+    );
+  };
+
+  dotContainer.addEventListener('click', function (e) {
+    if (!e.target.classList.contains('dots__dot')) return;
+    const { slide } = e.target.dataset; // data set is an object so we destruct it taking out slide
+    goToSlide(slide);
+  });
+
+  const activateDot = function (slide) {
+    document
+      .querySelectorAll('.dots__dot')
+      .forEach(dot => dot.classList.remove('dots__dot--active'));
+
+    document
+      .querySelector(`.dots__dot[data-slide="${slide}"]`)
+      .classList.add('dots__dot--active');
+  };
+
+  // move to next slide
+  const goToSlide = function (slide) {
+    slides.forEach(
+      (s, i) => (s.style.transform = `translateX(${(i - slide) * 100}%)`)
+    );
+    activateDot(slide);
+  };
+
+  // next slide
+  const nextSlide = function () {
+    currentSlide++;
+    if (currentSlide > maxSlide) currentSlide = 0;
+    goToSlide(currentSlide);
+  };
+
+  // previous slide
+  const prevSlide = function () {
+    currentSlide--;
+    if (currentSlide < 0) currentSlide = maxSlide;
+    goToSlide(currentSlide);
+  };
+
+  btnRight.addEventListener('click', nextSlide);
+  btnLeft.addEventListener('click', prevSlide);
+
+  // handle slider control with keyboard
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft') prevSlide();
+    if (e.key === 'ArrowRight') nextSlide();
+  });
+
+  // init
+  const init = () => {
+    createDots();
+    goToSlide(0);
+  };
+
+  init();
 };
 
-goToSlide(0);
-
-// next slide
-const nextSlide = function () {
-  currentSlide++;
-  if (currentSlide > maxSlide) currentSlide = 0;
-  goToSlide(currentSlide);
-};
-
-// previous slide
-const prevSlide = function () {
-  currentSlide--;
-  if (currentSlide < 0) currentSlide = maxSlide;
-  goToSlide(currentSlide);
-};
-
-btnRight.addEventListener('click', nextSlide);
-btnLeft.addEventListener('click', prevSlide);
-
+slider();
+ */
 ////////////////////////////////////////
 /* SELECT, CREATE AND DELETE ELEMENTS */
 ////////////////////////////////////////
@@ -581,3 +646,49 @@ let message, logo;
     if (el !== h1) el.style.transform = 'scale(0.5)';
   }); */
 }
+//////////////////////////
+/* DOM EVENTS LIFECYCLE */
+//////////////////////////
+//
+// Lifecycle is the time since user enter until he leaves the web application
+//
+// Event - DOMContentLoaded - fires when the web page is fully loaded. However it doesn't for images and other external resources to load so only JS and HTML need to be loaded
+
+document.addEventListener('DOMContentLoaded', () =>
+  console.log('HTML and JS loaded')
+);
+// when we set script loading at the end of HTML we don't need to listen for that event as js will execute that listener after all HTML code is loaded and JS file is loaded and executed
+
+// Event - load - fires on window object when the page is FULLY loaded
+
+window.addEventListener('load', e => console.log('Page is fully loaded', e));
+
+// Event - beforeunload - event fires right before user leaves the page (close browser tab for ex)
+
+// window.addEventListener('beforeunload', e => {
+//   e.preventDefault();
+//   console.log(e);
+//   // alert('leave the page');
+//   e.returnValue = ''; // nie działa w firefox, alert działa
+// });
+
+//////////////////////////////////////////////////
+/* ASYNC, DEFER AND OTHER WAYS TO LOAD A SCRIPT */
+//////////////////////////////////////////////////
+
+// event = DOMContentLoaded
+
+// SCRIPT IN HEAD - first load script and execute -> load html -> fire event === BAD SOLUTION
+// SCRIPT END OF BODY - first load html -> load and execute script -> fire event
+// ASYNC IN HEAD - start loading html and script -> execute script -> finish loading HTML -> event
+//  + if script is too big, event fires when HTML is parsed even if script fetch and exec is not done
+//  + scripts are NOT guaranteed to executre in order they are in the code
+
+// DEFER IN HEAD - parse HTML + fetch script -> execute script -> fire event
+//  + if script is too big, event fires AFTER fetching, parsing and execution is done
+//  + scripts ARE guaranteed to executre in order they are in the code
+
+// use DEFER is OVERALL THE BEST SOLUTION
+// use ASYNC is GOOD solution to load side scripts like analytics (not key for functioning)
+
+// ONLY NEW BROWSERS RECOGNIZE ASYNC AND DEFER to support OLD BROWSERS use script at the end of the body
