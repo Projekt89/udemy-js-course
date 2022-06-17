@@ -148,67 +148,68 @@ car1.speedTest(220, 10); */
 /////////////////
 /* ES6 CLASSES */
 /////////////////
-{
-  // ES6 classes works just like functions (and in fact they are functions but special type of functions) and we can delare them in two different ways
 
-  // class expression
-  const PersonCLE = class {};
-  // class declaration - more similar to class declaration from other languages
-  class PersonCL {
-    // constructor function has to be named constructor - when we use NEW keyword constructor function will be called
-    constructor(fullName, birthYear) {
-      this.fullName = fullName;
-      this.birthYear = birthYear;
-    }
-    // INSTANCE METHODS - available for all instances from __proto__
-    // this is how methods of the class are added and methods added in the class WILL BE ADDED TO __PROTO__ (PROTOTYPE) instead of being created with every instance of an object PersonCL
-    calcAge() {
-      console.log(2034 - this.birthYear);
-    }
+// ES6 classes works just like functions (and in fact they are functions but special type of functions) and we can delare them in two different ways
 
-    /* getter / setter pattern - validation at the time of creating a new object, overriding default property*/
-    get age() {
-      return 2034 - this.birthYear;
-    } // getter - every object created will have access to age property returning calculated age
-
-    // Setters are usefull for validation. Here this.fullName of the object will be set only if passed name inclused space. If not it
-    // in order to avoid naming conflict we use _ at the begining of the variable to set
-    set fullName(name) {
-      if (name.includes(' ')) {
-        this._fullName = name;
-        console.log(`${name} is a full name. Great!`);
-      } else alert(`${name} is not a full name!`);
-    }
-    // in order for user to be able to read fullName property without _ we need a getter
-    get fullName() {
-      return this._fullName;
-    }
-
-    // STATIC METHOD created in ES6 classes using 'static' keyword - available only to PersonCL
-    static hey() {
-      console.log(`Hey there from ES6 classes static method! 👋`);
-    }
+// class expression
+const PersonCLE = class {};
+// class declaration - more similar to class declaration from other languages
+class PersonCL {
+  // constructor function has to be named constructor - when we use NEW keyword constructor function will be called
+  constructor(fullName, birthYear) {
+    this.fullName = fullName;
+    this.birthYear = birthYear;
+  }
+  // INSTANCE METHODS - available for all instances from __proto__
+  // this is how methods of the class are added and methods added in the class WILL BE ADDED TO __PROTO__ (PROTOTYPE) instead of being created with every instance of an object PersonCL
+  calcAge() {
+    console.log(2034 - this.birthYear);
   }
 
-  PersonCL.hey();
+  /* getter / setter pattern - validation at the time of creating a new object, overriding default property*/
+  get age() {
+    return 2034 - this.birthYear;
+  } // getter - every object created will have access to age property returning calculated age
 
-  const jessica = new PersonCL('Jessica Davis', 1996);
-  const james = new PersonCL('James', 1985);
-  console.log(jessica);
-  console.log(jessica.__proto__ === PersonCL.prototype); // true
-  console.log(jessica.age); // 38
+  // Setters are usefull for validation. Here this.fullName of the object will be set only if passed name inclused space. If not it
+  // in order to avoid naming conflict we use _ at the begining of the variable to set
+  set fullName(name) {
+    if (name.includes(' ')) {
+      this._fullName = name;
+      console.log(`${name} is a full name. Great!`);
+    } else alert(`${name} is not a full name!`);
+  }
+  // in order for user to be able to read fullName property without _ we need a getter
+  get fullName() {
+    return this._fullName;
+  }
 
-  PersonCL.prototype.greet = function () {
-    console.log(`Hey ${this.firstName}`);
-  };
-
-  jessica.greet(); // Hey Jessica
-
-  // IMPORTANT NOTES !!!!!!!!!!!!!!!!!!!!!!!
-  // 1. Classes are NOT Hoisted
-  // 2. Classes are first-class citizens (can be passed and returned from functions)
-  // 3. Classes are ALLWAYS executed in strict mode
+  // STATIC METHOD created in ES6 classes using 'static' keyword - available only to PersonCL
+  static hey() {
+    console.log(`Hey there from ES6 classes static method! 👋`);
+  }
 }
+
+PersonCL.hey();
+
+const jessica = new PersonCL('Jessica Davis', 1996);
+const james = new PersonCL('James', 1985);
+console.log(jessica);
+console.log(jessica.__proto__ === PersonCL.prototype); // true
+console.log(jessica.age); // 38
+console.log(james);
+
+PersonCL.prototype.greet = function () {
+  console.log(`Hey ${this.firstName}`);
+};
+
+jessica.greet(); // Hey Jessica
+
+// IMPORTANT NOTES !!!!!!!!!!!!!!!!!!!!!!!
+// 1. Classes are NOT Hoisted
+// 2. Classes are first-class citizens (can be passed and returned from functions)
+// 3. Classes are ALLWAYS executed in strict mode
+
 /////////////////////////
 /* GETTERS and SETTERS */
 /////////////////////////
@@ -277,4 +278,99 @@ car1.speedTest(220, 10); */
   const sarah = Object.create(PersonProto); // create new object
   sarah.init('Sarah', 1977); // use method to initiate values instead of NEW keyword
   sarah.calcAge(); // 60 - calculated age of Sarah
+}
+//////////////////
+/* CHALLENGE #2 */
+//////////////////
+{
+  // Slightly modified in order to accomodate set speedUS during speed test and get it to displayed it in the console as the test runs.
+
+  class CarCL {
+    constructor(make, speed) {
+      this.speed = speed;
+      this.make = make;
+    }
+
+    accelerate() {
+      this.speed += 10;
+    }
+
+    brake() {
+      this.speed -= 5;
+    }
+
+    speedTest(maxSpeed, accelRate) {
+      const speedTest = setInterval(() => {
+        this.speedUS = this.speed;
+        console.log(
+          `Speed - ${Math.trunc(this.speedUS)} mph   /   ${Math.trunc(
+            this.speed
+          )} kph`
+        );
+        if (this.speed > maxSpeed) this.stops = true;
+        if (this.speed <= 50) clearInterval(speedTest);
+        if (this.stops) {
+          this.brake();
+          return;
+        }
+        this.accelerate();
+      }, 3000 * (1 - accelRate / 100));
+    }
+
+    get speedUS() {
+      return this._speed;
+    }
+
+    set speedUS(speed) {
+      this._speed = speed / 1.6;
+    }
+  }
+
+  const carUS = new CarCL('Tesla', 55);
+  console.log(carUS);
+  // carUS.speedTest(82, 80);
+}
+/////////////////////////////////
+/* INHERITANCE BETWEEN CLASSES */
+/////////////////////////////////
+{
+  // Two ways for implementation inheritance between classes:
+  // 1. ES6
+  class Student extends PersonCL {
+    constructor(fullName, birthYear, course) {
+      super(fullName, birthYear);
+      this.course = course;
+    }
+  }
+
+  const jessy = new Student('Jessy James', 22, 'Computer Science');
+  console.log(jessy);
+
+  // 2. CF and Object.create()
+  const StudentCF = function (firstName, birthYear, course) {
+    // connecting this keyword with Person CF so inside Person CF when Person class is called to create new object this will point to instance of StudentCF class.
+    Person.call(this, firstName, birthYear);
+    this.course = course;
+  };
+  // Manually assigning prototype of StudentCF new object that inherits from prototype of Person. This way inheritance chain is created and prototype of person becomes the parent of StudentCF
+  StudentCF.prototype = Object.create(Person.prototype);
+
+  // Tests - if we comment out binding of prototypes above, mike stops beeing instance of Person
+  console.log(mike instanceof StudentCF); // true
+  console.log(mike instanceof Person); // true - after setting inheritance
+
+  StudentCF.prototype.introduce = function () {
+    console.log(
+      `My name is ${this.firstName} and I'm studying ${this.course}.`
+    );
+  };
+
+  const mike = new StudentCF('Mike', 24, 'Biology');
+  console.log(mike);
+  mike.calcBirthGoodPractice();
+  console.log(mike.__proto__);
+
+  // fix of constructor as before that js thinks the constructor of student is Person
+  StudentCF.prototype.constructor = StudentCF;
+  console.log();
 }
