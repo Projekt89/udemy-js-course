@@ -111,8 +111,7 @@ console.log(x => x + 1); // f () -> object - functions are also objects so have 
 /////////////////
 /* CHALLENGE 1 */
 /////////////////
-{
-  /* const Car = function (make, speed) {
+const Car = function (make, speed) {
   this.make = make;
   this.speed = speed;
   this.stops = false;
@@ -120,30 +119,30 @@ console.log(x => x + 1); // f () -> object - functions are also objects so have 
 
 Car.prototype.accelerate = function () {
   this.speed += 10;
-  console.log(this.speed);
 };
 
 Car.prototype.brake = function () {
-  this.speed -= 5;
-  console.log(this.speed);
+  this.speed -= 15;
 };
 
 Car.prototype.speedTest = function (maxSpeed, accelRate) {
   const speedTest = setInterval(() => {
-    if (car1.speed > maxSpeed) car1.stops = true;
-    if (car1.speed <= 5) clearInterval(speedTest);
-    if (car1.stops) {
-      car1.brake();
+    if (this.speed > maxSpeed) {
+      console.log(`Time to slow down`);
+      this.stops = true;
+    }
+    if (this.speed <= 5) clearInterval(speedTest);
+    if (this.stops) {
+      this.brake();
       return;
     }
-    car1.accelerate();
+    this.accelerate();
   }, 3000 * (1 - accelRate / 100));
 };
 
-const car1 = new Car('Hundai', 55);
-// car1.speedTest(80, 30);
-car1.speedTest(220, 10); */
-}
+// const car1 = new Car('Hundai', 55);
+// // car1.speedTest(80, 30);
+// car1.speedTest(220, 10);
 
 /////////////////
 /* ES6 CLASSES */
@@ -355,6 +354,8 @@ jessica.greet(); // Hey Jessica
   // Manually assigning prototype of StudentCF new object that inherits from prototype of Person. This way inheritance chain is created and prototype of person becomes the parent of StudentCF
   StudentCF.prototype = Object.create(Person.prototype);
 
+  const mike = new StudentCF('Mike', 24, 'Biology');
+
   // Tests - if we comment out binding of prototypes above, mike stops beeing instance of Person
   console.log(mike instanceof StudentCF); // true
   console.log(mike instanceof Person); // true - after setting inheritance
@@ -365,12 +366,71 @@ jessica.greet(); // Hey Jessica
     );
   };
 
-  const mike = new StudentCF('Mike', 24, 'Biology');
   console.log(mike);
   mike.calcBirthGoodPractice();
-  console.log(mike.__proto__);
+  console.log(mike.__proto__.__proto__); // Person.prototype
 
   // fix of constructor as before that js thinks the constructor of student is Person
   StudentCF.prototype.constructor = StudentCF;
-  console.log();
+}
+
+///////////////////////////////////
+/* CHALLENGE #3 - EV CHILD CLASS */
+///////////////////////////////////
+// creating new 'class'
+const EV = function (make, speed, battery) {
+  // calling parent class with THIS binded to this in EV function ('class')
+  Car.call(this, make, speed);
+  this.battery = battery;
+};
+// connecting prototypes through inheritance
+EV.prototype = Object.create(Car.prototype);
+// adding additional methods to EV prototype
+EV.prototype.chargeBattery = function (chargeTo) {
+  if (chargeTo > 100) chargeTo = 100;
+  this.battery = chargeTo;
+};
+
+EV.prototype.accelerate = function () {
+  this.speed += 20;
+  this.battery -= 1;
+  console.log(
+    `${this.make} is going at ${this.speed} km/h, with a charge of ${this.battery}%`
+  );
+};
+// Testing functionality
+const tesla = new EV('Tesla', 10, 10);
+tesla.chargeBattery(25);
+tesla.speedTest(200, 75);
+
+/////////////////////////////////////////////////
+/* INHERITANCE IMPLEMENTATION WITH ES6 CLASSES */
+/////////////////////////////////////////////////
+{
+  // In case of ES6 classes - all of the inheritance mechanisms are done automatically in the background. We only need to use keyword extends following by name of parent class.
+  class StudentCL extends PersonCL {
+    constructor(fullName, birthYear, course) {
+      // super calls constructor from PersonCL and ALLWAYS has to happen first in constructor
+      super(fullName, birthYear);
+      this.course = course;
+    }
+
+    introduce() {
+      console.log(
+        `My name is ${this.fullName} and I'm studying ${this.course}.`
+      );
+    }
+
+    calcAge() {
+      console.log(`I'm ${2037 - this.birthYear} years old`);
+    }
+  }
+
+  // The code below still works just in a way that StudentCL is 'new name' of PersonCL
+  // class StudentCL extends PersonCL {}
+  // const martha = StudentCL('Martha Bird', 1995);
+
+  const martha = new StudentCL('Martha Bird', 1995, 'Computer Science');
+  martha.introduce();
+  martha.calcAge();
 }
