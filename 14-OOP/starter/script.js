@@ -410,7 +410,7 @@ tesla.speedTest(200, 75);
   // In case of ES6 classes - all of the inheritance mechanisms are done automatically in the background. We only need to use keyword extends following by name of parent class.
   class StudentCL extends PersonCL {
     constructor(fullName, birthYear, course) {
-      // super calls constructor from PersonCL and ALLWAYS has to happen first in constructor
+      // super calls constructor from PersonCL and ALWAYS has to happen first in constructor
       super(fullName, birthYear);
       this.course = course;
     }
@@ -420,7 +420,7 @@ tesla.speedTest(200, 75);
         `My name is ${this.fullName} and I'm studying ${this.course}.`
       );
     }
-
+    // calcAge in child class will overwrite the method with the same name from the parent class
     calcAge() {
       console.log(`I'm ${2037 - this.birthYear} years old`);
     }
@@ -433,4 +433,179 @@ tesla.speedTest(200, 75);
   const martha = new StudentCL('Martha Bird', 1995, 'Computer Science');
   martha.introduce();
   martha.calcAge();
+}
+
+///////////////////////////////////////////////////
+/* COMPLEX PROTOTYPE CHAIN USING OBJECT.CREATE() */
+///////////////////////////////////////////////////
+{
+  // This is the way to create inheritance between:
+  // Instance of StudentProto -> StudentProto -> PersonProto -> Object
+  // using manuall assignment of relations between these objects (Object.create())
+  // That way it is more code than ES6 but the code is clearer and unveil more steps that picture connections between specific objects
+
+  // initial prototype
+  const PersonProto = {
+    calcAge() {
+      console.log(2037 - this.birthYear);
+    },
+
+    init(firtsName, birthYear) {
+      this.firstName = firtsName;
+      this.birthYear = birthYear;
+    },
+  };
+
+  const steven = Object.create(PersonProto);
+
+  // Manual assignation of inheritance between StudentProto(child) and PersonProto(parent)
+  // StudentProto.__proto__ === PersonProto -> true
+  const StudentProto = Object.create(PersonProto);
+
+  // editing init method for StudentProto with use of init method from parent (bind this with .call)
+  StudentProto.init = function (firstName, birthYear, course) {
+    PersonProto.init.call(this, firstName, birthYear);
+    this.course = course;
+  };
+
+  StudentProto.introduce = function () {
+    console.log(
+      `My name is ${this.firstName} and I'm studying ${this.course}.`
+    );
+  };
+
+  const jay = Object.create(StudentProto);
+  jay.init('Jay', 2018, 'Chemistry');
+  jay.introduce();
+  jay.calcAge();
+}
+
+//////////////////////////////////////////////////
+/* RULES IN WORKING WITH CLASSES, ENCAPSULATION */
+//////////////////////////////////////////////////
+{
+  class Account {
+    constructor(owner, currency, pin) {
+      this.owner = owner;
+      this.current = currency;
+      // _ at start of name is convention of PROTECTED properties (not truly private)
+      // !this prop is STILL ACCESSIBLE but programmers know that they SHOULD DO IT ONLY using API!
+      this._pin = pin;
+      this._movements = [];
+      this.locale = navigator.language;
+      // we can execute any code we want in constructor and it will be executed every time new object is created and constructor function is used
+      console.log(`Thanks for opening an accout ${owner}! 💰`);
+    }
+    // It's very bad practice to EDIT OBJECT PROPERTIES directly in the code. So any edition of object's values should be done throught methods of that object. These methods are called API
+    deposit(val) {
+      this._movements.push(val);
+    }
+
+    withdraw(val) {
+      this.deposit(-val);
+    }
+
+    // Managing public / private interface - ENCAPSULATION - to prevent user from access and edition of values and methods that he should not have access to
+    _approveLoan(val) {
+      return true;
+    }
+
+    requestLoan(val) {
+      if (this._approveLoan(val)) {
+        this.deposit(val);
+        console.log(
+          `Loan of ${val} has been granted and soon the money will be on your account.`
+        );
+      }
+    }
+
+    // this is convention to get values of protected properties.
+    getMovements() {
+      return this._movements;
+    }
+  }
+
+  const acc1 = new Account('Bob Ross', 'EUR', 1111);
+  console.log(acc1);
+  acc1.deposit(200);
+  acc1.withdraw(140);
+  acc1.requestLoan(1000); // adds 1000 to movements
+  // acc1.approveLoan(1000); // this should be private method not accessible for user
+}
+//////////////////
+/* CLASS FIELDS */
+//////////////////
+{
+  // Class Fields are called this way because in traditional OOP languages (Java, C++ etc)properties are called fields
+  // 4 types of fields are:
+  // Public Fields
+  // Private Fields
+  // Public Methods
+  // Private Methods
+  // (There is also static version of each of these fields- methods that can be use only on class itself)
+
+  console.log('----------CLASS FIELDS - TESTS----------');
+  class Account {
+    // All the pulbic and private fields have to be created outside of the constructor
+    // Public Fields
+    locale = navigator.language; // syntax similar to variables
+
+    // Private Fields
+    #movements = []; // # at the begining cause the property in object private
+    #pin; // to create field which value is assigned inside of the constructor we need just to create it and don't assign it to anythig. Then we assign it with this.#name inside constructor.
+
+    constructor(owner, currency, pin) {
+      this.owner = owner;
+      this.current = currency;
+      this.#pin = pin;
+      console.log(`Thanks for opening an accout ${owner}! 💰`);
+    }
+
+    // Public Methods
+    deposit(val) {
+      this.#movements.push(val);
+      return this; // returning object to allow chaining
+    }
+
+    withdraw(val) {
+      this.deposit(-val);
+      return this; // returning object to allow chaining
+    }
+
+    // Private Methods - these are not yet well implemented in browsers. The syntax will work but the method is not a real private method inside prototype but Private filed stored inside an object instance. It will work but new instance of the function will be created with every new instance of an object of Account class.
+    #approveLoan(val) {
+      return true;
+    }
+
+    requestLoan(val) {
+      if (this.#approveLoan(val)) {
+        this.deposit(val);
+        console.log(
+          `Loan of ${val} has been granted and soon the money will be on your account.`
+        );
+      }
+      return this; // returning object to allow chaining
+    }
+
+    getMovements() {
+      return this.#movements;
+    }
+  }
+
+  const acc1 = new Account('Bob Ross', 'EUR', 1111);
+  // console.log(acc1.#pin); // error - Private value
+  acc1.deposit(200);
+  acc1.withdraw(140);
+  acc1.requestLoan(1000); // adds 1000 to movements
+  // acc1.approveLoan(1000); // this should be private method not accessible for user
+
+  acc1.deposit(300).deposit(500).withdraw(50).requestLoan(2000);
+  console.log(acc1.getMovements());
+}
+///////////////////////////////////
+/* CHAINING METHODS IN OUR CLASS */
+///////////////////////////////////
+{
+  // Chaining is implemented by returning the object at the end of the method.
+  // Functionality implemented in example above
 }
