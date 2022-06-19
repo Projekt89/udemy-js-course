@@ -609,3 +609,51 @@ tesla.speedTest(200, 75);
   // Chaining is implemented by returning the object at the end of the method.
   // Functionality implemented in example above
 }
+//////////////////
+/* CHALLENGE #4 */
+//////////////////
+{
+  class EVCl extends Car {
+    #charge;
+
+    constructor(make, speed, battery) {
+      super(make, speed);
+      this.#charge = battery;
+    }
+
+    accelerate() {
+      this.speed += 20;
+      this.#charge -= 5;
+      console.log(
+        `${this.make} is going at ${this.speed} km/h, with a charge of ${
+          this.#charge
+        }%`
+      );
+      return this;
+    }
+
+    chargeBattery(chargeTo) {
+      if (chargeTo > 100) chargeTo = 100;
+      this.#charge = chargeTo;
+      return this;
+    }
+
+    brake() {
+      this.#charge += 2;
+      this.speed -= 10;
+      console.log(`Regenerative breaking - state of charge ${this.#charge} %`);
+      return this;
+    }
+  }
+
+  // Testing functionality
+  const tesla = new EVCl('Tesla', 10, 10);
+  tesla
+    .chargeBattery(25)
+    .accelerate()
+    .accelerate()
+    .accelerate()
+    .brake()
+    .brake()
+    .brake();
+}
