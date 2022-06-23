@@ -160,7 +160,8 @@ class Workout {
   date = new Date();
   // ANY OBJECT WE CREATE SHOULD HAVE IT'S OWN IDENTIFIER
   // to generate id use library for creating id - dont use simple solution like date or math.random()
-  #id = Date.now() + '';
+  id = Date.now() + '';
+  clicks = 0;
 
   constructor(coords, distance, duration) {
     this.coords = coords; // [lat, lng]
@@ -177,6 +178,10 @@ class Workout {
       ${months[this.date.getMonth()]} 
       ${this.date.getDate()}
     `;
+  }
+
+  click() {
+    this.clicks++;
   }
 }
 
@@ -217,12 +222,14 @@ class Cycling extends Workout {
 class App {
   #map;
   #mapEvent;
+  #mapZoomLevel = 13;
   #workouts = [];
 
   constructor() {
     this._getPosition();
     form.addEventListener('submit', this._addWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationForm);
+    containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
   }
 
   _getPosition() {
@@ -313,7 +320,6 @@ class App {
 
     // add object to database
     this.#workouts.push(workout);
-    console.log(workout, this.#workouts);
 
     // render workout on the map
     this._renderWorkoutMarker(workout);
@@ -394,6 +400,23 @@ class App {
     }
 
     form.insertAdjacentHTML('afterend', html);
+  }
+
+  _moveToPopup(e) {
+    const workoutEl = e.target.closest('.workout');
+    if (!workoutEl) return;
+    const workoutObj = this.#workouts.find(
+      workout => workout.id === workoutEl.dataset.id
+    );
+    this.#map.setView(workoutObj.coords, this.#mapZoomLevel, {
+      animate: true,
+      pan: {
+        duration: 1,
+      },
+    });
+
+    // using public interface (api)
+    workoutObj.click();
   }
 }
 
