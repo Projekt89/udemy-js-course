@@ -43,6 +43,8 @@ a:visited {
 
 /* SIDEBAR */
 .sidebar {
+  position: relative;
+  overflow: hidden;
   flex-basis: 50rem;
   background-color: var(--color-dark--1);
   padding: 3rem 5rem 4rem 5rem;
@@ -119,6 +121,7 @@ a:visited {
 }
 
 .workouts {
+  position: relative;
   list-style: none;
   height: 77vh;
   overflow-y: scroll;
@@ -250,6 +253,51 @@ a:visited {
   display: none;
 }
 
+/* filtering form */
+.workouts__sort {
+  width: 100%;
+  padding: 10px 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.workouts__sort span {
+  display: block;
+  margin-right: auto;
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.workouts__sort input[type='checkbox'] {
+  display: none;
+}
+
+.workouts__sort label {
+  font-size: 1.4rem;
+  border: 2px solid transparent;
+  border-radius: 0.6rem;
+  margin-right: 1.5rem;
+  width: 2.8rem;
+  text-align: center;
+}
+
+.workouts__sort input[type='checkbox']:checked + label {
+  border: 2px solid var(--color-brand--2);
+}
+
+.workouts__sort select {
+  background-color: transparent;
+  font-size: 1.4rem;
+  border: 2px solid transparent;
+  border-radius: 0.6rem;
+
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--color-light--1);
+}
+
 .copyright {
   margin-top: auto;
   font-size: 1.3rem;
@@ -296,4 +344,65 @@ a:visited {
 }
 .cycling-popup .leaflet-popup-content-wrapper {
   border-left: 5px solid var(--color-brand--1);
+}
+
+.error--message {
+  position: absolute;
+  z-index: 9999;
+  padding: 20px;
+  max-width: 80%;
+  border-radius: 0 0 5px 5px;
+  top: -20rem;
+  border: 0.4rem solid var(--color-warning);
+  background-color: var(--color-dark--2);
+  color: #fff;
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+  opacity: 1;
+}
+
+.error--message--animate {
+  animation-name: show-error;
+  animation-duration: 3s;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+}
+
+@keyframes show-error {
+  0% {
+    top: -20rem;
+  }
+  10% {
+    top: -0.5rem;
+    opacity: 1;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  30% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.7;
+  }
+  70% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  90% {
+    top: -0.5rem;
+    opacity: 1;
+  }
+  100% {
+    top: -20rem;
+  }
 }

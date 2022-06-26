@@ -31,6 +31,7 @@
   </head>
   <body>
     <div class="sidebar">
+      <div class="error--message">This is Error message placeholder</div>
       <div class="sidebar-header">
         <img src="logo.png" alt="Logo" class="logo" />
       </div>
@@ -120,6 +121,28 @@
           </div>
         </li> -->
       </ul>
+      <form class="workouts__sort">
+        <span>Sort by:</span>
+        <input
+          type="checkbox"
+          checked="checked"
+          value="running"
+          id="sort__id--running"
+        />
+        <label for="sort__id--running">🏃‍♂️</label>
+        <input
+          type="checkbox"
+          checked="checked"
+          value="cycling"
+          id="sort__id--cycling"
+        />
+        <label for="sort__id--cycling">🚴‍♀️</label>
+        <select name="" id="">
+          <option value="distance">Distance</option>
+          <option value="duration">Duration</option>
+        </select>
+      </form>
+
       <button class="btn delete-all">
         Delete all workouts
         <span class="delete-loadingBar">Be carefull!</span>
