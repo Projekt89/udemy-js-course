@@ -1,6 +1,7 @@
 :root {
   --color-brand--1: #ffb545;
   --color-brand--2: #00c46a;
+  --color-warning: #ff5522;
 
   --color-dark--1: #2d3439;
   --color-dark--2: #42484d;
@@ -49,10 +50,72 @@ a:visited {
   flex-direction: column;
 }
 
+.sidebar-header {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
 .logo {
   height: 5.2rem;
   align-self: center;
   margin-bottom: 4rem;
+}
+
+.btn {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: 2px solid var(--color-brand--2);
+  border-radius: 0.5rem;
+  color: var(--color-light--2);
+  font-weight: bold;
+  font-family: 'Manrope', sans-serif;
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.delete-all {
+  overflow: hidden;
+  position: relative;
+  border: 0.3rem solid var(--color-brand--2);
+  border-radius: 0.8rem;
+  padding: 1rem;
+  margin: 1rem auto;
+  min-height: 5rem;
+  font-size: 1.5rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.delete-loadingBar {
+  content: '';
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: var(--color-warning);
+  top: 0;
+  left: -100%;
+  padding-right: 30px;
+  border-radius: 0.4rem;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-brand--1);
+  transition: all 3s linear;
+}
+
+.delete-loadingBar.loading {
+  left: 0;
+}
+
+.delete-loadingBar.quick-return {
+  transition: all 0.2s ease-out;
+}
+
+.delete-all:hover {
+  opacity: 1;
 }
 
 .workouts {
@@ -67,6 +130,7 @@ a:visited {
 }
 
 .workout {
+  position: relative;
   background-color: var(--color-dark--2);
   border-radius: 5px;
   padding: 1.5rem 2.25rem;
@@ -82,6 +146,21 @@ a:visited {
 }
 .workout--cycling {
   border-left: 5px solid var(--color-brand--1);
+}
+
+.workout__remove {
+  width: 2.5rem;
+  height: 2.5rem;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  border: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.workout__remove:hover {
+  opacity: 0.8;
+  color: var(--color-warning);
 }
 
 .workout__title {
@@ -125,11 +204,11 @@ a:visited {
 
   /* Match height and activity boxes */
   height: 9.25rem;
-  transition: all 0.5s, transform 1ms;
+  transition: all 0.5s, opacity 0.38s;
 }
 
 .form.hidden {
-  transform: translateY(-30rem);
+  transform: translateY(-5rem);
   height: 0;
   padding: 0 2.25rem;
   margin-bottom: 0;

@@ -50,6 +50,8 @@ const inputDistance = document.querySelector('.form__input--distance');
 const inputDuration = document.querySelector('.form__input--duration');
 const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
+const deleteAllBtn = document.querySelector('.delete-all');
+const deleteAllLoadingBar = document.querySelector('.delete-loadingBar');
 
 /////////////////////////////////////
 /* PT 1 - BROWSER GEOLOCATION API  */
@@ -223,13 +225,35 @@ class App {
   #map;
   #mapEvent;
   #mapZoomLevel = 13;
-  #workouts = [];
+  // set workouts to workouts from local storage or empty array if there is no workouts in LS
+  #workouts = this._getLocalStorage() || [];
+
+  // Events controllers
+  // #controllerReset = new AbortController(); // adding controller to handle window.eventListener signal
 
   constructor() {
     this._getPosition();
     form.addEventListener('submit', this._addWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationForm);
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
+    // add listener to update storage before unload with options where signal is controlled by abort controller. When controller.abort() event listener will not fire
+    // window.addEventListener('beforeunload', this._setLocalStorage.bind(this), {
+    //   signal: this.#controllerReset.signal,
+    // });
+    // delete all event
+    deleteAllBtn.addEventListener(
+      'mousedown',
+      this._deleteAllWorkouts.bind(this)
+    );
+    // hide form on press Escape
+    document.addEventListener(
+      'keyup',
+      e => e.key === 'Escape' && this._hideForm(e)
+    );
+    // delete workout
+    containerWorkouts.addEventListener('click', e =>
+      this._deleteWorkout.bind(this, e)()
+    );
   }
 
   _getPosition() {
@@ -255,6 +279,22 @@ class App {
     }).addTo(this.#map);
 
     this.#map.on('click', this._showForm.bind(this));
+    // we can load workouts only when map is allready loaded so we execute loading of storaged workouts after load of the map
+    this._renderWorkoutsFromLocalStorage();
+  }
+
+  _renderWorkoutsFromLocalStorage() {
+    this.#workouts.forEach(workout => {
+      if (!workout) return; // guard if any falsy value is in the storage
+      // bind prototypes to objects retrieved from storage
+      workout.type === 'running'
+        ? (workout.__proto__ = new Running())
+        : (workout.__proto__ = new Cycling());
+
+      this._renderWorkout(workout);
+      this._renderWorkoutMarker(workout);
+    });
+    console.log(this.#workouts);
   }
 
   _showForm(mapE) {
@@ -263,16 +303,18 @@ class App {
     inputDistance.focus();
   }
 
-  _hideForm() {
+  _hideForm(e) {
     inputCadence.value =
       inputDistance.value =
       inputDuration.value =
       inputElevation.value =
         '';
     // trick to avoid playing animations when making changes in classes of an element
-    form.style.display = 'none';
+    if (!e) {
+      form.style.display = 'none';
+      setTimeout(() => (form.style.display = 'grid'), 1000);
+    }
     form.classList.add('hidden');
-    setTimeout(() => (form.style.display = 'grid'), 1000);
   }
 
   _toggleElevationForm() {
@@ -290,12 +332,11 @@ class App {
     // Get data from form
     const type = inputType.value;
     const distance = +inputDistance.value;
-    const duration = +inputDistance.value;
+    const duration = +inputDuration.value;
     const { lat, lng } = this.#mapEvent.latlng;
     let workout;
 
     // validate data
-    console.log(type);
     // If workout is running create running object
     if (type === 'running') {
       const cadence = +inputCadence.value;
@@ -329,6 +370,9 @@ class App {
 
     // hide the form + clear form fields
     this._hideForm();
+
+    // set local storage to all workouts
+    this._setLocalStorage();
   }
 
   _renderWorkoutMarker(workout) {
@@ -352,6 +396,7 @@ class App {
   _renderWorkout(workout) {
     let html = `
     <li class="workout workout--${workout.type}" data-id="${workout.id}">
+      <button class="btn workout__remove">X</button>
       <h2 class="workout__title">${workout.description}</h2>
       <div class="workout__details">
         <span class="workout__icon">${
@@ -371,7 +416,7 @@ class App {
       html += ` 
           <div class="workout__details">
             <span class="workout__icon">⚡️</span>
-            <span class="workout__value">${workout.pace}</span>
+            <span class="workout__value">${workout.pace.toFixed(2)}</span>
             <span class="workout__unit">min/km</span>
           </div>
           <div class="workout__details">
@@ -387,7 +432,7 @@ class App {
       html += ` 
           <div class="workout__details">
             <span class="workout__icon">⚡️</span>
-            <span class="workout__value">${workout.speed}</span>
+            <span class="workout__value">${workout.speed.toFixed(2)}</span>
             <span class="workout__unit">km/h</span>
           </div>
           <div class="workout__details">
@@ -417,6 +462,78 @@ class App {
 
     // using public interface (api)
     workoutObj.click();
+  }
+  // creating 'variable' workouts in local storage
+  // localStorage.setItem('name', string_value) - local storage is very small container to store temporary values. We have to be very carefull using it to avoid store too much data which would block it.
+  // setItem is a function that takes 2 strings as arguments - first is a key and second is value in format of string. We can use JSON.stringify to convert object to string to store it
+  _setLocalStorage() {
+    localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+  }
+
+  _getLocalStorage() {
+    return JSON.parse(localStorage.getItem('workouts'));
+  }
+
+  _deleteAllWorkouts() {
+    // check if any workouts to delete exist
+    if (this.#workouts.length === 0) return;
+
+    // helper function for clearing timer if key is relesed
+    const stopTimer = () => {
+      deleteAllBtn.disabled = true;
+      deleteAllLoadingBar.classList.add('quick-return');
+      deleteAllLoadingBar.classList.remove('loading');
+      clearTimeout(timer);
+      deleteAllBtn.removeEventListener('mouseup', stopTimer);
+      setTimeout(() => {
+        deleteAllLoadingBar.classList.remove('quick-return');
+        deleteAllBtn.removeAttribute('disabled');
+      }, 200);
+    };
+
+    // start loadingBar animation
+    deleteAllLoadingBar.classList.add('loading');
+
+    // set timer so app perform reset after 3s of keypress
+    const timer = setTimeout(() => {
+      // add protection timer
+      deleteAllBtn.removeEventListener('mouseup', stopTimer);
+      // clear storages and perform app reset
+      localStorage.removeItem('workouts');
+      this.#workouts = [];
+      this.reset();
+      // hide loading bar
+      deleteAllLoadingBar.style.display = 'none';
+      deleteAllLoadingBar.classList.remove('loading');
+      setTimeout(() => (deleteAllLoadingBar.style.display = 'flex'), 3000);
+    }, 3000);
+
+    deleteAllBtn.addEventListener('mouseup', stopTimer);
+  }
+
+  // delete all data from local storage and reload the page
+  reset() {
+    // map container preparing
+    const oldMap = document.getElementById('map');
+    const newMap = document.createElement('div');
+    newMap.setAttribute('id', 'map');
+
+    // clearing storage and #workouts
+    // abort listener attached to window so it won't update storage on unload
+    // this.#controllerReset.abort();
+
+    // replacing map containers and initialization of new map
+    document.body.replaceChild(newMap, oldMap);
+    this._getPosition();
+    document.querySelectorAll('.workout').forEach(el => el.remove());
+  }
+
+  _deleteWorkout(e) {
+    if (!e.target.classList.contains('workout__remove')) return;
+    this.#workouts = this.#workouts.filter(
+      workout => workout.id !== e.target.parentElement.dataset.id
+    );
+    this.reset();
   }
 }
 
