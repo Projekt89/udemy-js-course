@@ -54,6 +54,7 @@ const deleteAllBtn = document.querySelector('.delete-all');
 const deleteAllLoadingBar = document.querySelector('.delete-loadingBar');
 const errorMsg = document.querySelector('.error--message');
 const sortForm = document.querySelector('.workouts__sort');
+const sortBy = sortForm.querySelector('#sort__by');
 
 const delayCssClassRemoval = (element, className, time) =>
   setTimeout(() => {
@@ -235,7 +236,9 @@ class App {
   #markersLayer = L.featureGroup().addTo(this.#map);
   // set workouts to workouts from local storage or empty array if there is no workouts in LS
   #workouts = this._getLocalStorage() || [];
-  #workoutsFiltered = this.#workouts;
+  #workoutsFiltered = [...this.#workouts];
+  #defaultSortOpt = sortBy.innerHTML;
+  #filters;
 
   // Events controllers
   #controllerReset = new AbortController(); // adding controller to handle window.eventListener signal
@@ -246,9 +249,7 @@ class App {
     inputType.addEventListener('change', this._toggleElevationForm);
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
     // add listener to update storage before unload with options where signal is controlled by abort controller. When controller.abort() event listener will not fire
-    window.addEventListener('beforeunload', this._setLocalStorage.bind(this), {
-      signal: this.#controllerReset.signal,
-    });
+    window.addEventListener('beforeunload', this._setLocalStorage.bind(this));
     // delete all event
     deleteAllBtn.addEventListener(
       'mousedown',
@@ -268,32 +269,75 @@ class App {
   }
 
   _sortWorkouts(e) {
-    console.log(e.target);
+    // helper funcitons
+    const updateSelect = () => {
+      if (this.#filters.running && !this.#filters.cycling)
+        return (sortBy.innerHTML = this.#defaultSortOpt + runningSortOpt);
+      if (!this.#filters.running && this.#filters.cycling)
+        return (sortBy.innerHTML = this.#defaultSortOpt + cyclingSortOpt);
+      sortBy.innerHTML = this.#defaultSortOpt;
+    };
+    const selectWorkouts = filters => {
+      this.#workoutsFiltered = this.#workouts.filter(work => {
+        if (work.type === 'cycling' && filters.cycling) return true;
+        if (work.type === 'running' && filters.running) return true;
+        return false;
+      });
+    };
+    const sortWorkouts = value => {
+      this.#workoutsFiltered.sort((a, b) => (a[value] > b[value] ? 1 : -1));
+      this.#filters.target = e.target.value;
+    };
+    const sort = value => {
+      sortWorkouts(value);
+      this._renderWorkouts(this.#workoutsFiltered);
+    };
+    // select list modifiers
+    const runningSortOpt = `
+      <option value='cadence'>Cadence</option>
+      <option value='pace'>Pace</option>
+    `;
+    const cyclingSortOpt = `
+      <option value='speed'>Speed</option>
+      <option value='elevation-gain'>El.gain</option>
+    `;
+    // filters state
+    this.#filters = {
+      ...this.#filters,
+      cycling: sortForm.querySelector('#sort__id--cycling').checked,
+      running: sortForm.querySelector('#sort__id--running').checked,
+    };
+
+    // filtering functionality
+    if (e.target.value === 'cycling' || e.target.value === 'running') {
+      updateSelect();
+      selectWorkouts(this.#filters);
+      this._renderWorkouts(this.#workoutsFiltered);
+    }
+    // disabling first click as e.target.value is the same so no need to reload
+    if (this.#filters.target === e.target.value) return;
+    // sorting functionality
     switch (e.target.value) {
-      case 'running':
-        if (e.target.checked);
-        break;
-      case 'cycling':
-        console.log('clicked cycling');
-        break;
       case 'distance':
-        console.log('chosen distance');
+        sort('distance');
         break;
       case 'duration':
-        console.log('chosen duration');
+        sort('duration');
         break;
       case 'cadence':
-        console.log('chosen cadence');
+        sort('cadence');
         break;
       case 'elevation-gain':
-        console.log('chosen elevation-gain');
+        sort('elevationGain');
         break;
       case 'speed':
-        console.log('chosen speed');
+        sort('speed');
         break;
       case 'pace':
-        console.log('chosen pace');
+        sort('pace');
         break;
+      default:
+        return;
     }
   }
 
@@ -321,11 +365,12 @@ class App {
     this.#map.on('click', this._showForm.bind(this));
 
     // we can load workouts only when map is allready loaded so we execute loading of storaged workouts after load of the map
-    this._renderWorkouts();
+    this._renderWorkouts(this.#workouts);
   }
 
-  _renderWorkouts() {
-    this.#workouts.forEach(workout => {
+  _renderWorkouts(workouts) {
+    this._reset();
+    workouts.forEach(workout => {
       if (!workout) return; // guard if any falsy value is in the storage
       // bind prototypes to objects retrieved from storage
       workout.type === 'running'
@@ -514,6 +559,7 @@ class App {
     return JSON.parse(localStorage.getItem('workouts'));
   }
 
+  // delete all user data
   _deleteAllWorkouts() {
     // check if any workouts to delete exist
     if (this.#workouts.length === 0) return;
@@ -538,7 +584,11 @@ class App {
     const timer = setTimeout(() => {
       // add protection timer
       deleteAllBtn.removeEventListener('mouseup', stopTimer);
-      this.reset();
+      // clearing layers, local storage, #workouts and workoutsContainer
+      localStorage.removeItem('workouts');
+      this.#workouts = [];
+      this.#markersLayer.clearLayers();
+      document.querySelectorAll('.workout').forEach(el => el.remove());
       // hide loading bar
       deleteAllLoadingBar.style.display = 'none';
       deleteAllLoadingBar.classList.remove('loading');
@@ -548,11 +598,9 @@ class App {
     deleteAllBtn.addEventListener('mouseup', stopTimer);
   }
 
-  // delete all data from local storage and reload the page
-  reset() {
-    // clearing layers, local storage, #workouts and workoutsContainer
-    localStorage.removeItem('workouts');
-    this.#workouts = [];
+  // reset currently shown data
+  _reset() {
+    // delete all workouts form sidebar and map layer
     this.#markersLayer.clearLayers();
     document.querySelectorAll('.workout').forEach(el => el.remove());
     // abort listener attached to window so it won't update storage on unload
@@ -565,11 +613,9 @@ class App {
     this.#workouts = this.#workouts.filter(
       workout => workout.id !== e.target.parentElement.dataset.id
     );
-    // delete all workouts form sidebar, update local storage, render all workouts again
-    document.querySelectorAll('.workout').forEach(el => el.remove());
-    this.#markersLayer.clearLayers();
+    // update local storage, render all workouts again
     this._setLocalStorage();
-    this._renderWorkouts();
+    this._renderWorkouts(this.#workoutsFiltered);
   }
 
   _showError(msg) {
