@@ -151,7 +151,8 @@ a:visited {
   border-left: 5px solid var(--color-brand--1);
 }
 
-.workout__remove {
+.workout__remove,
+.workout__edit {
   width: 2.5rem;
   height: 2.5rem;
   position: absolute;
@@ -159,11 +160,22 @@ a:visited {
   right: 4px;
   border: none;
   transition: all 0.2s ease-in-out;
+  font-size: 1.8rem;
 }
 
-.workout__remove:hover {
+.workout__edit {
+  top: 3px;
+  right: 30px;
+}
+
+.workout__remove:hover,
+.workout__edit:hover {
   opacity: 0.8;
   color: var(--color-warning);
+}
+
+.workout__edit:hover {
+  color: var(--color-brand--1);
 }
 
 .workout__title {

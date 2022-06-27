@@ -55,6 +55,8 @@ const deleteAllLoadingBar = document.querySelector('.delete-loadingBar');
 const errorMsg = document.querySelector('.error--message');
 const sortForm = document.querySelector('.workouts__sort');
 const sortBy = sortForm.querySelector('#sort__by');
+const sortTypeCycling = sortForm.querySelector('#sort__id--cycling');
+const sortTypeRunning = sortForm.querySelector('#sort__id--running');
 
 const delayCssClassRemoval = (element, className, time) =>
   setTimeout(() => {
@@ -208,6 +210,17 @@ class Running extends Workout {
     // min/km
     this.pace = this.duration / this.distance;
   }
+
+  _editWorkout(
+    distance = this.distance,
+    duration = this.duration,
+    cadence = this.cadence
+  ) {
+    this.distance = distance;
+    this.duration = duration;
+    this.cadence = cadence;
+    this.calcPace();
+  }
 }
 
 class Cycling extends Workout {
@@ -222,6 +235,17 @@ class Cycling extends Workout {
   calcSpeed() {
     // km/h
     this.speed = this.distance / (this.duration / 60);
+  }
+
+  _editWorkout(
+    distance = this.distance,
+    duration = this.duration,
+    elevationGain = this.elevationGain
+  ) {
+    this.distance = distance;
+    this.duration = duration;
+    this.elevationGain = elevationGain;
+    this.calcPace();
   }
 }
 
@@ -248,6 +272,11 @@ class App {
     form.addEventListener('submit', this._addWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationForm);
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
+    containerWorkouts.addEventListener('click', e =>
+      this._handleEditWrkout.bind(this, e)()
+    );
+    // reset forms
+    this._resetForms();
     // add listener to update storage before unload with options where signal is controlled by abort controller. When controller.abort() event listener will not fire
     window.addEventListener('beforeunload', this._setLocalStorage.bind(this));
     // delete all event
@@ -268,6 +297,27 @@ class App {
     sortForm.addEventListener('click', e => this._sortWorkouts.bind(this, e)());
   }
 
+  _handleEditWrkout(e) {
+    if (!e.target.classList.contains('workout__edit')) return;
+    const parent = e.target.parentElement;
+    const workoutIndex = this.#workouts.findIndex(
+      w => w.id === parent.dataset.id
+    );
+    // render form over parent element
+    // prepopulate into form data from selected workout
+
+    // change in workouts - workout with parent id to edited workout
+    console.log(workoutIndex);
+  }
+
+  _selectWorkoutsToRender = filters => {
+    this.#workoutsFiltered = this.#workouts.filter(work => {
+      if (work.type === 'cycling' && filters.cycling) return true;
+      if (work.type === 'running' && filters.running) return true;
+      return false;
+    });
+  };
+
   _sortWorkouts(e) {
     // helper funcitons
     const updateSelect = () => {
@@ -277,20 +327,13 @@ class App {
         return (sortBy.innerHTML = this.#defaultSortOpt + cyclingSortOpt);
       sortBy.innerHTML = this.#defaultSortOpt;
     };
-    const selectWorkouts = filters => {
-      this.#workoutsFiltered = this.#workouts.filter(work => {
-        if (work.type === 'cycling' && filters.cycling) return true;
-        if (work.type === 'running' && filters.running) return true;
-        return false;
-      });
-    };
-    const sortWorkouts = value => {
+    const sortWorkoutsArr = value => {
       this.#workoutsFiltered.sort((a, b) => (a[value] > b[value] ? 1 : -1));
       this.#filters.target = e.target.value;
     };
     const sort = value => {
-      sortWorkouts(value);
-      this._renderWorkouts(this.#workoutsFiltered);
+      sortWorkoutsArr(value);
+      this._renderWorkouts(this.#workoutsFiltered, true);
     };
     // select list modifiers
     const runningSortOpt = `
@@ -304,14 +347,14 @@ class App {
     // filters state
     this.#filters = {
       ...this.#filters,
-      cycling: sortForm.querySelector('#sort__id--cycling').checked,
-      running: sortForm.querySelector('#sort__id--running').checked,
+      cycling: sortTypeCycling.checked,
+      running: sortTypeRunning.checked,
     };
 
     // filtering functionality
     if (e.target.value === 'cycling' || e.target.value === 'running') {
       updateSelect();
-      selectWorkouts(this.#filters);
+      this._selectWorkoutsToRender(this.#filters);
       this._renderWorkouts(this.#workoutsFiltered);
     }
     // disabling first click as e.target.value is the same so no need to reload
@@ -365,18 +408,23 @@ class App {
     this.#map.on('click', this._showForm.bind(this));
 
     // we can load workouts only when map is allready loaded so we execute loading of storaged workouts after load of the map
+    this._rebuildStorageWorkouts();
     this._renderWorkouts(this.#workouts);
   }
 
-  _renderWorkouts(workouts) {
-    this._reset();
-    workouts.forEach(workout => {
+  _rebuildStorageWorkouts() {
+    this.#workouts.forEach(workout => {
       if (!workout) return; // guard if any falsy value is in the storage
       // bind prototypes to objects retrieved from storage
       workout.type === 'running'
         ? (workout.__proto__ = new Running())
         : (workout.__proto__ = new Cycling());
+    });
+  }
 
+  _renderWorkouts(workouts) {
+    this._reset();
+    workouts.forEach(workout => {
       this._renderWorkout(workout);
       this._renderWorkoutMarker(workout);
     });
@@ -404,7 +452,8 @@ class App {
   _renderWorkout(workout) {
     let html = `
     <li class="workout workout--${workout.type}" data-id="${workout.id}">
-      <button class="btn workout__remove">X</button>
+      <button class="btn workout__edit">⋯</button>
+      <button class="btn workout__remove">×</button>
       <h2 class="workout__title">${workout.description}</h2>
       <div class="workout__details">
         <span class="workout__icon">${
@@ -530,6 +579,8 @@ class App {
 
     // hide the form + clear form fields
     this._hideForm();
+
+    console.log(this.#workouts);
   }
 
   _moveToPopup(e) {
@@ -615,6 +666,7 @@ class App {
     );
     // update local storage, render all workouts again
     this._setLocalStorage();
+    this._selectWorkoutsToRender(this.#filters);
     this._renderWorkouts(this.#workoutsFiltered);
   }
 
@@ -622,6 +674,13 @@ class App {
     errorMsg.textContent = msg;
     errorMsg.classList.add('error--message--animate');
     delayCssClassRemoval(errorMsg, 'error--message--animate', 3000);
+  }
+
+  _resetForms() {
+    sortTypeCycling.checked = true;
+    sortTypeRunning.checked = true;
+    inputType.value = 'running';
+    sortBy.value = '';
   }
 }
 
