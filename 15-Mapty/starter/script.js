@@ -294,7 +294,9 @@ class App {
       this._deleteWorkout.bind(this, e)()
     );
     // sorting workouts
-    sortForm.addEventListener('click', e => this._sortWorkouts.bind(this, e)());
+    sortForm.addEventListener('click', e =>
+      this._handleFiltration.bind(this, e)()
+    );
   }
 
   _handleEditWrkout(e) {
@@ -303,7 +305,22 @@ class App {
     const workoutIndex = this.#workouts.findIndex(
       w => w.id === parent.dataset.id
     );
+    const editionForm = `
+      <form class='edition__form'>
+        <div class="form__row">
+          <input class="form__input form__input--distance" placeholder="km"/>
+          <input class="form__input form__input--duration" placeholder="min"/>
+          ${
+            this.#workouts[workoutIndex].type === 'cycling'
+              ? `<input class="form__input form__input--cadence" placeholder="step/min"/>`
+              : `<input class="form__input form__input--elevation" placeholder="meters"/>`
+          }
+        </div>
+        <button class="btn">↺</button>
+      </form>
+    `;
     // render form over parent element
+    parent.insertAdjacentHTML('beforeend', editionForm);
     // prepopulate into form data from selected workout
 
     // change in workouts - workout with parent id to edited workout
@@ -318,37 +335,36 @@ class App {
     });
   };
 
-  _sortWorkouts(e) {
-    // helper funcitons
+  _handleFiltration(e) {
+    // update global filters state
+    this.#filters = {
+      ...this.#filters,
+      cycling: sortTypeCycling.checked,
+      running: sortTypeRunning.checked,
+    };
+
+    this._filterWorkouts(e);
+    if (e.target.tagName === 'OPTION') this._sortWorkouts(e);
+  }
+
+  _filterWorkouts(e) {
+    // helper functions
+    // HTML <select> list modifiers
+    const runningSortOpt = `
+     <option value='cadence'>Cadence</option>
+     <option value='pace'>Pace</option>
+   `;
+    const cyclingSortOpt = `
+     <option value='speed'>Speed</option>
+     <option value='elevation-gain'>El.gain</option>
+   `;
+    // update HTML <select> list sort by filters accordingly
     const updateSelect = () => {
       if (this.#filters.running && !this.#filters.cycling)
         return (sortBy.innerHTML = this.#defaultSortOpt + runningSortOpt);
       if (!this.#filters.running && this.#filters.cycling)
         return (sortBy.innerHTML = this.#defaultSortOpt + cyclingSortOpt);
       sortBy.innerHTML = this.#defaultSortOpt;
-    };
-    const sortWorkoutsArr = value => {
-      this.#workoutsFiltered.sort((a, b) => (a[value] > b[value] ? 1 : -1));
-      this.#filters.target = e.target.value;
-    };
-    const sort = value => {
-      sortWorkoutsArr(value);
-      this._renderWorkouts(this.#workoutsFiltered, true);
-    };
-    // select list modifiers
-    const runningSortOpt = `
-      <option value='cadence'>Cadence</option>
-      <option value='pace'>Pace</option>
-    `;
-    const cyclingSortOpt = `
-      <option value='speed'>Speed</option>
-      <option value='elevation-gain'>El.gain</option>
-    `;
-    // filters state
-    this.#filters = {
-      ...this.#filters,
-      cycling: sortTypeCycling.checked,
-      running: sortTypeRunning.checked,
     };
 
     // filtering functionality
@@ -357,6 +373,23 @@ class App {
       this._selectWorkoutsToRender(this.#filters);
       this._renderWorkouts(this.#workoutsFiltered);
     }
+  }
+
+  _sortWorkouts(e) {
+    // helper funcitons
+    // sorting filtered array
+    const sortWorkoutsArr = value => {
+      this.#workoutsFiltered.sort((a, b) => (a[value] > b[value] ? 1 : -1));
+      this.#filters.target = e.target.value;
+    };
+
+    const sort = value => {
+      sortWorkoutsArr(value);
+
+      document.querySelectorAll('.workout').forEach(el => el.remove());
+      this.#workoutsFiltered.forEach(workout => this._renderWorkout(workout));
+    };
+
     // disabling first click as e.target.value is the same so no need to reload
     if (this.#filters.target === e.target.value) return;
     // sorting functionality
