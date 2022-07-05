@@ -269,12 +269,11 @@ class App {
 
   constructor() {
     this._getPosition();
-    form.addEventListener('submit', this._addWorkout.bind(this));
+    form.addEventListener('submit', this._handleSubmit.bind(this));
     inputType.addEventListener('change', this._toggleElevationForm);
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
-    containerWorkouts.addEventListener('click', e =>
-      this._handleEditWrkout.bind(this, e)()
-    );
+    // initialize filters variable
+    this._setFilters();
     // reset forms
     this._resetForms();
     // add listener to update storage before unload with options where signal is controlled by abort controller. When controller.abort() event listener will not fire
@@ -293,130 +292,70 @@ class App {
     containerWorkouts.addEventListener('click', e =>
       this._deleteWorkout.bind(this, e)()
     );
+    // edit workout
+    containerWorkouts.addEventListener('click', e =>
+      this._editWorkout.bind(this, e)()
+    );
     // sorting workouts
     sortForm.addEventListener('click', e =>
-      this._handleFiltration.bind(this, e)()
+      this._executeFiltering.bind(this, e)()
     );
   }
 
-  _handleEditWrkout(e) {
+  _handleSubmit() {
+    console.log(this);
+    console.log('tekst');
+  }
+
+  _updateWorkout() {
+    console.log(this);
+    console.log('updateWorkout exec');
+    this._resetForms();
+    this._hideForm();
+  }
+
+  _editWorkout(e) {
+    e.preventDefault();
     if (!e.target.classList.contains('workout__edit')) return;
+
     const parent = e.target.parentElement;
     const workoutIndex = this.#workouts.findIndex(
       w => w.id === parent.dataset.id
     );
-    const editionForm = `
-      <form class='edition__form'>
-        <div class="form__row">
-          <input class="form__input form__input--distance" placeholder="km"/>
-          <input class="form__input form__input--duration" placeholder="min"/>
-          ${
-            this.#workouts[workoutIndex].type === 'cycling'
-              ? `<input class="form__input form__input--cadence" placeholder="step/min"/>`
-              : `<input class="form__input form__input--elevation" placeholder="meters"/>`
-          }
-        </div>
-        <button class="btn">↺</button>
-      </form>
-    `;
+    const workoutObj = this.#workouts[workoutIndex];
+
+    this._showForm();
+    inputType.value = workoutObj.type;
+    inputDistance.value = workoutObj.distance;
+    inputDuration.value = workoutObj.duration;
+    if (workoutObj.type === 'cycling')
+      inputElevation.value = workoutObj.elevationGain;
+    if (workoutObj.type === 'running') inputCadence.value = workoutObj.cadence;
+
+    // const editionForm = `
+    //   <form class='edition__form'>
+    //     <div class="form__row">
+    //       <input class="form__input form__input--distance" placeholder="km"/>
+    //       <input class="form__input form__input--duration" placeholder="min"/>
+    //       ${
+    //         this.#workouts[workoutIndex].type === 'cycling'
+    //           ? `<input class="form__input form__input--cadence" placeholder="step/min"/>`
+    //           : `<input class="form__input form__input--elevation" placeholder="meters"/>`
+    //       }
+    //     </div>
+    //     <button class="btn">↺</button>
+    //   </form>
+    // `;
     // render form over parent element
-    parent.insertAdjacentHTML('beforeend', editionForm);
+    // parent.insertAdjacentHTML('beforeend', editionForm);
     // prepopulate into form data from selected workout
 
     // change in workouts - workout with parent id to edited workout
     console.log(workoutIndex);
   }
 
-  _selectWorkoutsToRender = filters => {
-    this.#workoutsFiltered = this.#workouts.filter(work => {
-      if (work.type === 'cycling' && filters.cycling) return true;
-      if (work.type === 'running' && filters.running) return true;
-      return false;
-    });
-  };
-
-  _handleFiltration(e) {
-    // update global filters state
-    this.#filters = {
-      ...this.#filters,
-      cycling: sortTypeCycling.checked,
-      running: sortTypeRunning.checked,
-    };
-
-    this._filterWorkouts(e);
-    if (e.target.tagName === 'OPTION') this._sortWorkouts(e);
-  }
-
-  _filterWorkouts(e) {
-    // helper functions
-    // HTML <select> list modifiers
-    const runningSortOpt = `
-     <option value='cadence'>Cadence</option>
-     <option value='pace'>Pace</option>
-   `;
-    const cyclingSortOpt = `
-     <option value='speed'>Speed</option>
-     <option value='elevation-gain'>El.gain</option>
-   `;
-    // update HTML <select> list sort by filters accordingly
-    const updateSelect = () => {
-      if (this.#filters.running && !this.#filters.cycling)
-        return (sortBy.innerHTML = this.#defaultSortOpt + runningSortOpt);
-      if (!this.#filters.running && this.#filters.cycling)
-        return (sortBy.innerHTML = this.#defaultSortOpt + cyclingSortOpt);
-      sortBy.innerHTML = this.#defaultSortOpt;
-    };
-
-    // filtering functionality
-    if (e.target.value === 'cycling' || e.target.value === 'running') {
-      updateSelect();
-      this._selectWorkoutsToRender(this.#filters);
-      this._renderWorkouts(this.#workoutsFiltered);
-    }
-  }
-
-  _sortWorkouts(e) {
-    // helper funcitons
-    // sorting filtered array
-    const sortWorkoutsArr = value => {
-      this.#workoutsFiltered.sort((a, b) => (a[value] > b[value] ? 1 : -1));
-      this.#filters.target = e.target.value;
-    };
-
-    const sort = value => {
-      sortWorkoutsArr(value);
-
-      document.querySelectorAll('.workout').forEach(el => el.remove());
-      this.#workoutsFiltered.forEach(workout => this._renderWorkout(workout));
-    };
-
-    // disabling first click as e.target.value is the same so no need to reload
-    if (this.#filters.target === e.target.value) return;
-    // sorting functionality
-    switch (e.target.value) {
-      case 'distance':
-        sort('distance');
-        break;
-      case 'duration':
-        sort('duration');
-        break;
-      case 'cadence':
-        sort('cadence');
-        break;
-      case 'elevation-gain':
-        sort('elevationGain');
-        break;
-      case 'speed':
-        sort('speed');
-        break;
-      case 'pace':
-        sort('pace');
-        break;
-      default:
-        return;
-    }
-  }
-
+  //*** INITIALIZATION FUNCTIONS ***//
+  // get user's position, initialize map
   _getPosition() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -428,6 +367,7 @@ class App {
     }
   }
 
+  // load map, bind click on map, initialize workout objects from LS and render them
   _loadMap(pos) {
     const { latitude, longitude } = pos.coords;
     const coords = [latitude, longitude];
@@ -455,6 +395,7 @@ class App {
     });
   }
 
+  // initialize rendering of list position and marker of given workouts array
   _renderWorkouts(workouts) {
     this._reset();
     workouts.forEach(workout => {
@@ -463,6 +404,7 @@ class App {
     });
   }
 
+  // create workout marker and add it to this.#markersLayer - layer variable
   _renderWorkoutMarker(workout) {
     const marker = L.marker(workout.coords)
       .bindPopup(
@@ -482,6 +424,7 @@ class App {
     marker.openPopup();
   }
 
+  // create workout list element
   _renderWorkout(workout) {
     let html = `
     <li class="workout workout--${workout.type}" data-id="${workout.id}">
@@ -537,6 +480,7 @@ class App {
     form.insertAdjacentHTML('afterend', html);
   }
 
+  // show hide workout form accordingly
   _showForm(mapE) {
     this.#mapEvent = mapE;
     form.classList.remove('hidden');
@@ -557,11 +501,13 @@ class App {
     form.classList.add('hidden');
   }
 
+  // toggling elevation/cadence depending on option value
   _toggleElevationForm() {
     inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
     inputElevation.closest('.form__row').classList.toggle('form__row--hidden');
   }
 
+  // form validation, creating object and rendering accordingly
   _addWorkout(e) {
     e.preventDefault();
     // helper funcitons
@@ -616,7 +562,9 @@ class App {
     console.log(this.#workouts);
   }
 
+  // move setView to objects coords
   _moveToPopup(e) {
+    if (e.target.classList.contains('workout__remove')) return;
     const workoutEl = e.target.closest('.workout');
     if (!workoutEl) return;
     const workoutObj = this.#workouts.find(
@@ -635,6 +583,8 @@ class App {
   // creating 'variable' workouts in local storage
   // localStorage.setItem('name', string_value) - local storage is very small container to store temporary values. We have to be very carefull using it to avoid store too much data which would block it.
   // setItem is a function that takes 2 strings as arguments - first is a key and second is value in format of string. We can use JSON.stringify to convert object to string to store it
+
+  // setting reading  local storage
   _setLocalStorage() {
     localStorage.setItem('workouts', JSON.stringify(this.#workouts));
   }
@@ -643,7 +593,108 @@ class App {
     return JSON.parse(localStorage.getItem('workouts'));
   }
 
-  // delete all user data
+  //*** SORTATION & FILTRATION ***//
+  // set this.#filters variable
+  _setFilters() {
+    this.#filters = {
+      ...this.#filters,
+      cycling: sortTypeCycling.checked,
+      running: sortTypeRunning.checked,
+    };
+  }
+
+  // set this.#workoutsFiltered accordingly to applied filters running/cycling/none
+  _selectWorkoutsToRender = filters => {
+    this.#workoutsFiltered = this.#workouts.filter(work => {
+      if (work.type === 'cycling' && filters.cycling) return true;
+      if (work.type === 'running' && filters.running) return true;
+      return false;
+    });
+  };
+
+  //  executing changes in app when filteres applied
+  _filterWorkouts(e) {
+    // helper functions
+    // HTML <select> list modifiers
+    const runningSortOpt = `
+     <option value='cadence'>Cadence</option>
+     <option value='pace'>Pace</option>
+   `;
+    const cyclingSortOpt = `
+     <option value='speed'>Speed</option>
+     <option value='elevation-gain'>El.gain</option>
+   `;
+    // update HTML <select> list sort by filters accordingly
+    const updateSelect = () => {
+      if (this.#filters.running && !this.#filters.cycling)
+        return (sortBy.innerHTML = this.#defaultSortOpt + runningSortOpt);
+      if (!this.#filters.running && this.#filters.cycling)
+        return (sortBy.innerHTML = this.#defaultSortOpt + cyclingSortOpt);
+      sortBy.innerHTML = this.#defaultSortOpt;
+    };
+
+    // filtering functionality
+    if (e.target.value === 'cycling' || e.target.value === 'running') {
+      updateSelect();
+      this._selectWorkoutsToRender(this.#filters);
+      this._renderWorkouts(this.#workoutsFiltered);
+    }
+  }
+
+  // sortation of this.#workoutsFiltered depending on option value
+  _sortWorkouts(e) {
+    // helper funcitons
+    // sorting filtered array
+    const sortWorkoutsArr = value => {
+      this.#workoutsFiltered.sort((a, b) => (a[value] > b[value] ? 1 : -1));
+      this.#filters.target = e.target.value;
+    };
+
+    const sort = value => {
+      sortWorkoutsArr(value);
+
+      document.querySelectorAll('.workout').forEach(el => el.remove());
+      this.#workoutsFiltered.forEach(workout => this._renderWorkout(workout));
+    };
+
+    // disabling first click as e.target.value is the same so no need to reload
+    if (this.#filters.target === e.target.value) return;
+
+    // sorting functionality
+    switch (e.target.value) {
+      case 'distance':
+        sort('distance');
+        break;
+      case 'duration':
+        sort('duration');
+        break;
+      case 'cadence':
+        sort('cadence');
+        break;
+      case 'elevation-gain':
+        sort('elevationGain');
+        break;
+      case 'speed':
+        sort('speed');
+        break;
+      case 'pace':
+        sort('pace');
+        break;
+      default:
+        return;
+    }
+  }
+
+  // filtration + sortation execution caller funtion
+  _executeFiltering(e) {
+    // update global filters state
+    this._setFilters();
+
+    this._filterWorkouts(e);
+    if (e.target.tagName === 'OPTION') this._sortWorkouts(e);
+  }
+
+  //*** DELETION FUNCTIONS ***//
   _deleteAllWorkouts() {
     // check if any workouts to delete exist
     if (this.#workouts.length === 0) return;
@@ -682,15 +733,6 @@ class App {
     deleteAllBtn.addEventListener('mouseup', stopTimer);
   }
 
-  // reset currently shown data
-  _reset() {
-    // delete all workouts form sidebar and map layer
-    this.#markersLayer.clearLayers();
-    document.querySelectorAll('.workout').forEach(el => el.remove());
-    // abort listener attached to window so it won't update storage on unload
-    this.#controllerReset.abort();
-  }
-
   _deleteWorkout(e) {
     if (!e.target.classList.contains('workout__remove')) return;
     // set #workouts to #workouts without clicked id
@@ -703,12 +745,24 @@ class App {
     this._renderWorkouts(this.#workoutsFiltered);
   }
 
+  //*** GLOBAL HELPER FUNCTIONS ***//
+  // reset currently shown data
+  _reset() {
+    // delete all workouts form sidebar and map layer
+    this.#markersLayer.clearLayers();
+    document.querySelectorAll('.workout').forEach(el => el.remove());
+    // abort listener attached to window so it won't update storage on unload
+    this.#controllerReset.abort();
+  }
+
+  // shows error message if form validation fails
   _showError(msg) {
     errorMsg.textContent = msg;
     errorMsg.classList.add('error--message--animate');
     delayCssClassRemoval(errorMsg, 'error--message--animate', 3000);
   }
 
+  // resets form
   _resetForms() {
     sortTypeCycling.checked = true;
     sortTypeRunning.checked = true;
