@@ -313,7 +313,16 @@ class App {
     this._resetForms();
     this._hideForm();
   }
-
+  /*
+  |
+  |
+  |
+  |
+  ||| Edit workouts tbd ||| after clicking edit icon content of the wokout gets hidden and form appears in the workout container. The form is prepopulated with workout data for edition. after clicking button 'save' form gets hidden and workout reappear in the container.
+  |
+  |
+  |
+  */
   _editWorkout(e) {
     e.preventDefault();
     if (!e.target.classList.contains('workout__edit')) return;
